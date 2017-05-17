@@ -16,7 +16,6 @@
 
 using namespace std;
 
-
 const char MIMEString[][40] =
 {
     "",
@@ -75,7 +74,6 @@ void HTTPServer::HandleClient(int clientfd, struct sockaddr_in* clientAddress, u
     close(clientfd);
 }
 
-
 HTTPRequest HTTPServer::ParseRequest(int clientfd)
 {
     char buffer[100];
@@ -87,12 +85,11 @@ HTTPRequest HTTPServer::ParseRequest(int clientfd)
         buffer[recvLen] = '\0';
         packet += buffer;
         headerEnd = packet.find("\r\n\r\n");
-    }while (headerEnd == string::npos);
+    } while (headerEnd == string::npos);
     header = packet.substr(0, headerEnd);
     HTTPRequest request = ParseHeader(header);
-
     payload = packet.erase(0, headerEnd + 4);
-
+    parsePayload(clientfd, request, payload);
 
     return request;
 }
@@ -187,4 +184,55 @@ vector<MIMEType> HTTPServer::parseAccept(std::string accept)
         if (accept.find(MIMEString[type]) != string::npos)
             toBeReturned.push_back((MIMEType)type);
     return toBeReturned;
+}
+
+void HTTPServer::parsePayload(int clientfd, HTTPRequest& request, std::string remainingPayload)
+{//XXX check for size
+    if (request.transferEncoding() == HTTP_TRANSFER_ENCODING_CHUNKED)
+    {
+        stringstream chunkedPayload(remainingPayload);
+        while (chunkedPayload.str().length() < 1000)
+        {
+            while (chunkedPayload.str().find("\r\n") != string::npos)
+            {
+                char buffer[100];
+                int recvLen = recv(clientfd, buffer, 99, 0);
+                if (recvLen <= 0)
+                    throw HTTPException(HTTP_BAD_REQUEST);
+                chunkedPayload.str(chunkedPayload.str() + buffer);
+            }
+            string chunkLenStr;
+            getline(chunkedPayload, chunkLenStr);
+            size_t chunkLen = stol(chunkLenStr, NULL, 16);
+            if (chunkLen  == 0)
+                return;
+            while (chunkedPayload.str().size() < chunkLen + 2)
+            {
+                char buffer[100];
+                int recvLen = recv(clientfd, buffer, 99, 0);
+                if (recvLen <= 0)
+                    throw HTTPException(HTTP_BAD_REQUEST);
+                chunkedPayload.str(chunkedPayload.str() + buffer);
+            }
+            string chunk;
+            for (size_t i = 0; i < chunkLen; i++)
+                chunk += chunkedPayload.get();
+            chunkedPayload.get();
+            chunkedPayload.get();
+            request.concatToPayload(chunk);
+        }
+    }
+    else
+    {
+        request.concatToPayload(remainingPayload);
+        while (request.payload().length() < request.contentLength() && request.payload().length() < 1000)
+        {
+            char buffer[100];
+            int recvLen = recv(clientfd, buffer, 99, 0);
+            if (recvLen <= 0)
+                throw HTTPException(HTTP_BAD_REQUEST);
+            buffer[recvLen] = '\0';
+            request.concatToPayload(buffer);
+        }
+    }
 }

@@ -39,11 +39,19 @@ HTTPConnection HTTPRequest::connection() const
     return connection_;
 }
 
+HTTPTransferEncoding HTTPRequest::transferEncoding() const
+{
+    return transferEncoding_;
+}
+
 size_t HTTPRequest::contentLength() const
 {
     return contentLength_;
 }
-
+const std::string& HTTPRequest::payload() const
+{
+    return payload_;
+}
 void HTTPRequest::concatToPayload(std::string payload)
 {
     payload_ += payload;
