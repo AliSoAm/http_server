@@ -65,7 +65,7 @@ enum HTTPTransferEncoding
 
 #define HTTP_OK                                     200
 
-#define HTTP_NOT_MODIFIED                            304
+#define HTTP_NOT_MODIFIED                           304
 
 #define HTTP_BAD_REQUEST                            400
 #define HTTP_FORBIDDEN                              403
@@ -95,7 +95,7 @@ public:
     {
         return HTTPErrorCode_;
     }
-    const char* what() const throw()
+    virtual const char* what() const throw()
     {
         return what_;
     }

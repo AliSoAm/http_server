@@ -5,28 +5,29 @@
 #include <string>
 #include <cstdlib>
 #include "HTTP.h"
+#include "TCPServer.h"
 class HTTPRequest
 {
 public:
-                            HTTPRequest                     (HTTPMethod method,
-                                                             std::string URI,
-                                                             std::string host,
-                                                             MIMEType contentType,
-                                                             std::vector<MIMEType> accept,
-                                                             HTTPConnection connection,
-                                                             HTTPTransferEncoding transferEncoding,
-                                                             size_t contentLength);
-    HTTPMethod              method                          () const;
-    std::string             URI                             () const;
-    MIMEType                contentType                     () const;
-    std::vector<MIMEType>   accept                          () const;
-    std::string             host                            () const;
-    HTTPConnection          connection                      () const;
-    HTTPTransferEncoding    transferEncoding                () const;
-    size_t                  contentLength                   () const;
-    const std::string&      payload                         () const;
-    void                    concatToPayload                 (std::string payload);
+                            HTTPRequest                     (TCPRemoteClient client);
+    HTTPMethod              method                          ()                                                  const;
+    std::string             URI                             ()                                                  const;
+    MIMEType                contentType                     ()                                                  const;
+    std::vector<MIMEType>   accept                          ()                                                  const;
+    std::string             host                            ()                                                  const;
+    HTTPConnection          connection                      ()                                                  const;
+    HTTPTransferEncoding    transferEncoding                ()                                                  const;
+    void                    sendResponseHeader              (unsigned int responseCode,
+                                                             MIMEType contentType);
+    void                    Send                            (const char* buffer,
+                                                             size_t length);
+    int                     Recv                            (char* buffer,
+                                                             size_t length);
+    bool                    isHeaderSent                    ()                                                  const;
+    bool                    isRecvCompleted                 ()                                                  const;
+    void                    Close                           ();
 private:
+    TCPRemoteClient         client_;
     HTTPMethod              method_;
     std::string             URI_;
     MIMEType                contentType_;
@@ -35,7 +36,20 @@ private:
     HTTPConnection          connection_;
     HTTPTransferEncoding    transferEncoding_;
     size_t                  contentLength_;
-    std::string             payload_;
+    std::vector<char>       payloadRemaining;
+    char                    remainingBuffer[100];
+    size_t                  remainingBufferLen;
+    size_t                  remainingChunkLen;
+    bool                    recvComplete;
+    bool                    headerSent;
+    void                    ParseRequest                        ();
+    void                    ParseHeader                         (const std::string& header);
+    HTTPMethod              parseMethod                         (const std::string& method)                     const;
+    MIMEType                parseContentType                    (const std::string& contentType)                const;
+    HTTPConnection          parseConnection                     (const std::string& connection)                 const;
+    HTTPTransferEncoding    parseTransferEncoding               (const std::string& transferEncoding)           const;
+    std::vector<MIMEType>   parseAccept                         (const std::string& accept)                     const;
+    int                     prepareForNextChunk                 ();
 };
 
 #endif
