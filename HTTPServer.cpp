@@ -21,7 +21,6 @@ void HTTPServer::loop()
     while (1)
     {
         TCPRemoteClient client = tcpServer.Accept();
-//        cout << "Connection from: " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << endl;
         HandleClient(client);
         client.Close();
     }

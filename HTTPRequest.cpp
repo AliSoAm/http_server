@@ -180,7 +180,6 @@ HTTPMethod HTTPRequest::parseMethod(const string& method) const
 
 MIMEType HTTPRequest::parseContentType(const string& contentType) const
 {
-    cout << "Content-Type: \"" << contentType << "\""<< endl;
     for (int type = MIME_APPLICATION_JAVASCRIPT; type <= MIME_IMAGE_GIF; type++)
         if (contentType.find(MIMEString[type]) != string::npos)
             return (MIMEType)type;
@@ -200,7 +199,6 @@ HTTPConnection HTTPRequest::parseConnection(const string& connection) const
 
 HTTPTransferEncoding HTTPRequest::parseTransferEncoding(const string& transferEncoding) const
 {
-    cout << "Transfer-Encoding: \"" << transferEncoding << "\"" << endl;
     if (transferEncoding == TRANSFER_ENCODING_CHUNKED)
         return HTTP_TRANSFER_ENCODING_CHUNKED;
     if (transferEncoding == TRANSFER_ENCODING_IDENTITY)
@@ -210,7 +208,6 @@ HTTPTransferEncoding HTTPRequest::parseTransferEncoding(const string& transferEn
 
 vector<MIMEType> HTTPRequest::parseAccept(const string& accept) const
 {
-    cout << "Accept: \"" << accept << "\"" << endl;
     vector<MIMEType> toBeReturned;
     for (int type = MIME_ALL; type <= MIME_IMAGE_GIF; type++)
         if (accept.find(MIMEString[type]) != string::npos)
