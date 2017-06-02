@@ -50,6 +50,13 @@ private:
     HTTPTransferEncoding    parseTransferEncoding               (const std::string& transferEncoding)           const;
     std::vector<MIMEType>   parseAccept                         (const std::string& accept)                     const;
     int                     prepareForNextChunk                 ();
+    int                     recvRemainingChunk                  (char* buffer,
+                                                                 size_t length,
+                                                                 size_t recvedLen);
+    size_t                  recvRemainingBuffer                 (char* buffer,
+                                                                 size_t length,
+                                                                 size_t recvedLen);
+    void                    completeCurrentChunk                ();
 };
 
 #endif

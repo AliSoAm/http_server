@@ -2,6 +2,7 @@
 #define HTTP_H
 #include <exception>
 #include <cstring>
+#include <string>
 
 enum HTTPMethod
 {
@@ -77,32 +78,18 @@ enum HTTPTransferEncoding
 #define HTTP_INTERNAL_SERVER_ERROR                  500
 #define HTTP_NOT_IMPLEMENTED                        501
 
-
+const std::string& getHTTPResponseMessage(unsigned int responseCode);
 
 class HTTPException: public std::exception
 {
 public:
-    HTTPException(int HTTPErrorCode, const char* what): HTTPErrorCode_(HTTPErrorCode)
-    {
-        std::strncpy(what_, what, 29);
-        what_[29] = '\0';
-    }
-    HTTPException(int HTTPErrorCode): HTTPErrorCode_(HTTPErrorCode)
-    {
-        what_[0] = '\0';
-    }
-    int HTTPErrorCode() const
-    {
-        return HTTPErrorCode_;
-    }
-    virtual const char* what() const throw()
-    {
-        return what_;
-    }
-
+    HTTPException(int HTTPErrorCode, const char* what);
+    HTTPException(int HTTPErrorCode);
+    int HTTPErrorCode() const;
+    virtual const char* what() const throw();
 private:
     int HTTPErrorCode_;
-    char what_[30];
+    char what_[50];
 };
 
 #endif

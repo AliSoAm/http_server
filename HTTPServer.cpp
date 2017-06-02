@@ -27,34 +27,51 @@ void HTTPServer::loop()
     }
 }
 
-void HTTPServer::DispatchRequest(HTTPRequest& request)
+void HTTPServer::DispatchRequest(HTTPRequest& request, TCPRemoteClient& client)
 {
-    cout << "dispatching->URI: "<< request.URI() << endl;
-    string URI = request.URI();
-    string name = "";
-    size_t slashPos;
-    subURI* current = &root;
-    do
+    try
     {
-        slashPos = URI.find("/", 1);
-        name = URI.substr(1, slashPos);
-        cout << "\tname: \"" << name << "\"" << endl;
-        cout << "\tremaining URI: \"" << URI << "\"" << endl;
-        auto next = find_if(current->children.begin(), current->children.end(), [&](subURI* s){return s->name == name;});
-        if (next != current->children.end())
-            current = *next;
+        cout << "dispatching->URI: "<< request.URI() << endl;
+        string URI = request.URI();
+        string name = "";
+        size_t slashPos;
+        subURI* current = &root;
+        do
+        {
+            slashPos = URI.find("/", 1);
+            name = URI.substr(1, slashPos);
+            URI.erase(0, slashPos);
+            cout << "\tname: \"" << name << "\"" << endl;
+            cout << "\tremaining URI: \"" << URI << "\"" << endl;
+            auto next = find_if(current->children.begin(), current->children.end(), [&](subURI* s){return s->name == name;});
+            if (next != current->children.end())
+                current = *next;
+            else
+                break;
+        }while (slashPos != string::npos);
+        if (URI == "")
+        {
+            if (current->callback != NULL)
+                current->callback(request);
+        }
         else
-            break;
-        URI.erase(0, slashPos);
-    }while (slashPos != string::npos);
-    if (URI == "")
-    {
-        if (current->callback != NULL)
-            current->callback(request);
+        {
+            throw HTTPException(HTTP_NOT_FOUND);
+        }
+        if (!request.isHeaderSent())
+            HTTPServerErrorResponse(HTTP_NOT_IMPLEMENTED, client);
     }
-    else
+    catch (HTTPException& e)
     {
-        throw HTTPException(HTTP_NOT_FOUND);
+        cout << "HTTP exception-> Code: " << e.HTTPErrorCode() << " ->>>> " << e.what() << endl;
+        if (!request.isHeaderSent())
+            HTTPServerErrorResponse(e.HTTPErrorCode(), client);
+    }
+    catch (exception &e)
+    {
+        cout << "Un handled exception->>>>" << e.what() << endl;
+        if (!request.isHeaderSent())
+            HTTPServerErrorResponse(500, client);
     }
 }
 
@@ -63,33 +80,32 @@ void HTTPServer::HandleClient(TCPRemoteClient& client)
     try
     {
         HTTPRequest request(client);
-        DispatchRequest(request);
+        DispatchRequest(request, client);
         request.Close();
     }
     catch (HTTPException& e)
     {
         cout << "HTTP exception-> Code: " << e.HTTPErrorCode() << " ->>>> " << e.what() << endl;
-        string response = "HTTP/1.1 ";
-        response = response + to_string(e.HTTPErrorCode()) + " " + ":(\r\n"
-                 + "Content-Type: text/plain\r\n"
-                 + "Connection: close\r\n"
-                 + "Content-Length: 0\r\n"
-                 + "\r\n";
-        client.Send(response.c_str(), response.length());
+        HTTPServerErrorResponse(e.HTTPErrorCode(), client);
     }
     catch (exception &e)
     {
         cout << "Un handled exception->>>>" << e.what() << endl;
-        string response = "HTTP/1.1 ";
-        response = response + "500 Internal Server Error\r\n"
-                 + "Content-Type: text/plain\r\n"
-                 + "Connection: close\r\n"
-                 + "Content-Length: 0\r\n"
-                 + "\r\n";
-        client.Send(response.c_str(), response.length());
+        HTTPServerErrorResponse(500, client);
     }
+
 }
 
+void HTTPServer::HTTPServerErrorResponse(unsigned int errorCode, TCPRemoteClient& client)
+{
+    stringstream response;
+    response << "HTTP/1.1 " << errorCode << " " << getHTTPResponseMessage(errorCode) << "\r\n"
+             << "Content-Type: text/plain\r\n"
+             << "Connection: close\r\n"
+             << "Content-Length: 0\r\n"
+             << "\r\n";
+    client.Send(response.str().c_str(), response.str().length());
+}
 subURI* HTTPServer::addRootURI(const string& name, URICallback callback)
 {
     subURI* toBeReturned = new subURI;

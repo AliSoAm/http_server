@@ -31,7 +31,10 @@ private:
     TCPServer               tcpServer;
     subURI                  root;
     void                    HandleClient                        (TCPRemoteClient& client);
-    void                    DispatchRequest                     (HTTPRequest& request);
+    void                    DispatchRequest                     (HTTPRequest& request,
+                                                                 TCPRemoteClient& client);
+    void                    HTTPServerErrorResponse             (unsigned int errorCode,
+                                                                 TCPRemoteClient& client);
 };
 
 #endif

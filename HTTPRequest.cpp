@@ -90,15 +90,16 @@ void HTTPRequest::ParseHeader(const string& header)
     size_t contentLength = 0;
     while (getline(headerStream, line))
     {
-        if (line.back() == '\r')
-            line.pop_back();
+        if (*line.rbegin() == '\r')
+            line.erase(line.length(), 1);
         size_t colonPosition = line.find(":");
         string name = line.substr(0, colonPosition);
-        transform(name.begin(), name.end(), name.begin(), ::tolower);
+        transform(name.begin(), name.end(), name.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
         name.erase(remove(name.begin(), name.end(), ' '), name.end());
         string value = line.substr(colonPosition + 1);
-        transform(value.begin(), value.end(), value.begin(), ::tolower);
+        transform(value.begin(), value.end(), value.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
         value.erase(remove(value.begin(), value.end(), ' '), value.end());
+        cout << name << ": " << value << endl;
         if (colonPosition == string::npos)
             throw HTTPException(HTTP_BAD_REQUEST);
         else if (name == "host")
@@ -227,10 +228,8 @@ void HTTPRequest::Send(const char* buffer, size_t length)
             memcpy(sendBuffer + 5, buffer, remainedLength);
             sendBuffer[length + 5] = '\r';
             sendBuffer[length + 6] = '\n';
-            printf("Send called\r\n");
             if (client_.Send(sendBuffer, remainedLength + 7) != remainedLength + 7)
                 throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
-            printf("Send finished\r\n");
             buffer += remainedLength;
             remainedLength = 0;
         }
@@ -239,81 +238,27 @@ void HTTPRequest::Send(const char* buffer, size_t length)
 
 int HTTPRequest::Recv(char* buffer, size_t length)
 {
+    if (isRecvCompleted())
+        return 0;
     size_t recvedLen = 0;
-    char buff[100];
     if (transferEncoding_ == HTTP_TRANSFER_ENCODING_CHUNKED)
     {
         while (recvedLen < length)
         {
-            cout << "remainingChunkLen: " << remainingChunkLen << endl;
             if (remainingChunkLen > 0)
             {
                 if (remainingBufferLen > 0)
                 {
-                    cout << "1" << endl;
-                    size_t readyLen = (remainingChunkLen > remainingBufferLen) ? remainingBufferLen : remainingChunkLen;
-                    if (length <= readyLen)
-                    {
-                        cout << "11" << endl;
-                        memcpy(buffer + recvedLen, remainingBuffer, length);
-                        recvedLen += length;
-                        remainingChunkLen -= length;
-                        remainingBufferLen -= length;
-                        memcpy(remainingBuffer, remainingBuffer + length, remainingBufferLen);
-                    }
-                    else
-                    {
-                        cout << "12" << endl;
-                        memcpy(buffer + recvedLen, remainingBuffer, readyLen);
-                        recvedLen += readyLen;
-                        remainingChunkLen -= readyLen;
-                        remainingBufferLen -= readyLen;
-                        memcpy(remainingBuffer, remainingBuffer + readyLen, remainingBufferLen);
-                    }
-                    remainingBuffer[remainingBufferLen] = 0;
-                }
-                else if (length < remainingChunkLen)
-                {
-                    cout << "2" << endl;
-                    int recvLen = client_.Recv(buffer + recvedLen, (length - recvedLen));
-                    if (recvLen < 0)
-                        return recvedLen;
-                    remainingChunkLen -= recvLen;
-                    return recvedLen + recvLen;
+                    recvedLen = recvRemainingBuffer(buffer, length, recvedLen);
                 }
                 else
                 {
-                    cout << "3" << endl;
-                    int recvLen = client_.Recv(buffer + recvedLen, remainingChunkLen);
-                    if (recvLen < 0)
-                        return recvedLen;
-                    remainingChunkLen -= recvLen;
-                    recvedLen += recvLen;
-                    if (recvLen < remainingChunkLen )
-                        return recvedLen;
+                    recvedLen = recvRemainingChunk(buffer, length, recvedLen);
+                    if (remainingChunkLen > 0 && length != recvedLen)
+                        break;
                 }
                 if (remainingChunkLen == 0)
-                {
-                    cout << "4" << endl;
-                    if (remainingBufferLen >= 2)
-                    {
-                        memcpy(remainingBuffer, remainingBuffer + 2, remainingBufferLen - 2);
-                        remainingBufferLen -= 2;
-                        remainingBuffer[remainingBufferLen] = 0;
-                    }
-                    else if (remainingBufferLen == 1)
-                    {
-                        remainingBufferLen = 0;
-                        remainingBuffer[0] = 0;
-                        if (client_.Recv(buff, 1) != 1)
-                            throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
-                    }
-                    else
-                    {
-                        if (client_.Recv(buff, 2) != 2)
-                            throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
-                    }
-                }
+                    completeCurrentChunk();
             }
             else
             {
@@ -323,21 +268,86 @@ int HTTPRequest::Recv(char* buffer, size_t length)
                     if (recvedLen == 0)
                         return -1;
                     else
-                        return recvedLen;
+                        break;
                 }
                 else if (nextChunkReturn == 0)
                 {
                     recvComplete = true;
-                    return recvedLen;
+                    break;
                 }
             }
         }
     }
     else
     {
-        return client_.Recv(buffer, length);
+        int recvLen = client_.Recv(buffer, length);
+        if (recvLen < 0)
+            return recvLen;
+        recvedLen = recvLen;
     }
     return recvedLen;
+}
+
+size_t HTTPRequest::recvRemainingBuffer(char* buffer, size_t length, size_t recvedLen)
+{
+    size_t readyLen = (remainingChunkLen > remainingBufferLen) ? remainingBufferLen : remainingChunkLen;
+    if (length <= readyLen)
+    {
+        memcpy(buffer + recvedLen, remainingBuffer, length);
+        recvedLen += length;
+        remainingChunkLen -= length;
+        remainingBufferLen -= length;
+        memcpy(remainingBuffer, remainingBuffer + length, remainingBufferLen);
+    }
+    else
+    {
+        memcpy(buffer + recvedLen, remainingBuffer, readyLen);
+        recvedLen += readyLen;
+        remainingChunkLen -= readyLen;
+        remainingBufferLen -= readyLen;
+        memcpy(remainingBuffer, remainingBuffer + readyLen, remainingBufferLen);
+    }
+    remainingBuffer[remainingBufferLen] = 0;
+    return recvedLen;
+}
+
+int HTTPRequest::recvRemainingChunk(char* buffer, size_t length, size_t recvedLen)
+{
+    int recvLen = 0;
+
+    if (length < remainingChunkLen)
+        recvLen = client_.Recv(buffer + recvedLen, (length - recvedLen));
+    else
+        recvLen = client_.Recv(buffer + recvedLen, remainingChunkLen);
+    if (recvLen < 0)
+        return recvedLen;
+    remainingChunkLen -= recvLen;
+    recvedLen += recvLen;
+    return recvedLen;
+}
+
+void HTTPRequest::completeCurrentChunk()
+{
+    if (remainingBufferLen >= 2)
+    {
+        memcpy(remainingBuffer, remainingBuffer + 2, remainingBufferLen - 2);
+        remainingBufferLen -= 2;
+        remainingBuffer[remainingBufferLen] = 0;
+    }
+    else if (remainingBufferLen == 1)
+    {
+        char buff[1];
+        remainingBufferLen = 0;
+        remainingBuffer[0] = 0;
+        if (client_.Recv(buff, 1) != 1)
+            throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
+    }
+    else
+    {
+        char buff[2];
+        if (client_.Recv(buff, 2) != 2)
+            throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
+    }
 }
 
 int HTTPRequest::prepareForNextChunk()
@@ -383,12 +393,14 @@ bool HTTPRequest::isRecvCompleted() const
 
 void HTTPRequest::sendResponseHeader(unsigned int responseCode, MIMEType contentType)
 {
-    string response = "HTTP/1.1 ";
-    response = response + to_string(responseCode) + " " + "OK\r\n"
-             + "Content-Type:" + " " + MIMEString[contentType] + "\r\n"
-             + "Connection: close\r\n"
-             + "Transfer-Encoding: Chunked\r\n"
-             + "\r\n";
-    client_.Send(response.c_str(), response.length());
+    if (isHeaderSent())
+        return;
+    stringstream response;
+    response << "HTTP/1.1 " << to_string(responseCode) << " " << getHTTPResponseMessage(responseCode) << "\r\n"
+             << "Content-Type: " << MIMEString[contentType] << "\r\n"
+             << "Connection: close\r\n"
+             << "Transfer-Encoding: Chunked\r\n"
+             << "\r\n";
+    client_.Send(response.str().c_str(), response.str().length());
     headerSent = true;
 }
