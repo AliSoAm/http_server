@@ -40,7 +40,6 @@ void HTTPServer::DispatchRequest(HTTPRequest& request, TCPRemoteClient& client)
         {
             slashPos = URI.find("/", 1);
             name = URI.substr(1, slashPos);
-            URI.erase(0, slashPos);
             cout << "\tname: \"" << name << "\"" << endl;
             cout << "\tremaining URI: \"" << URI << "\"" << endl;
             auto next = find_if(current->children.begin(), current->children.end(), [&](subURI* s){return s->name == name;});
@@ -48,8 +47,9 @@ void HTTPServer::DispatchRequest(HTTPRequest& request, TCPRemoteClient& client)
                 current = *next;
             else
                 break;
+            URI.erase(0, slashPos);
         }while (slashPos != string::npos);
-        if (URI == "")
+        if (URI == "" || URI == "/")
         {
             if (current->callback != NULL)
                 current->callback(request);
@@ -93,7 +93,6 @@ void HTTPServer::HandleClient(TCPRemoteClient& client)
         cout << "Un handled exception->>>>" << e.what() << endl;
         HTTPServerErrorResponse(500, client);
     }
-
 }
 
 void HTTPServer::HTTPServerErrorResponse(unsigned int errorCode, TCPRemoteClient& client)

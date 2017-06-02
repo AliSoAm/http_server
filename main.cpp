@@ -1,23 +1,191 @@
 #include <iostream>
 #include "HTTPServer.h"
 
+char loginForm[] =
+"<!DOCTYPE html>\n"
+"<html>\n"
+"<style>\n"
+"/* Full-width input fields */\n"
+"input[type=text], input[type=password] {\n"
+"    width: 100%;\n"
+"    padding: 12px 20px;\n"
+"    margin: 8px 0;\n"
+"    display: inline-block;\n"
+"    border: 1px solid #ccc;\n"
+"    box-sizing: border-box;\n"
+"}\n"
+"\n"
+"/* Set a style for all buttons */\n"
+"button {\n"
+"    background-color: #4CAF50;\n"
+"    color: white;\n"
+"    padding: 14px 20px;\n"
+"    margin: 8px 0;\n"
+"    border: none;\n"
+"    cursor: pointer;\n"
+"    width: 100%;\n"
+"}\n"
+"\n"
+"button:hover {\n"
+"    opacity: 0.8;\n"
+"}\n"
+"\n"
+"/* Extra styles for the cancel button */\n"
+".cancelbtn {\n"
+"    width: auto;\n"
+"    padding: 10px 18px;\n"
+"    background-color: #f44336;\n"
+"}\n"
+"\n"
+"/* Center the image and position the close button */\n"
+".imgcontainer {\n"
+"    text-align: center;\n"
+"    margin: 24px 0 12px 0;\n"
+"    position: relative;\n"
+"}\n"
+"\n"
+"img.avatar {\n"
+"    width: 40%;\n"
+"    border-radius: 50%;\n"
+"}\n"
+"\n"
+".container {\n"
+"    padding: 16px;\n"
+"}\n"
+"\n"
+"span.psw {\n"
+"    float: right;\n"
+"    padding-top: 16px;\n"
+"}\n"
+"\n"
+"/* The Modal (background) */\n"
+".modal {\n"
+"    display: none; /* Hidden by default */\n"
+"    position: fixed; /* Stay in place */\n"
+"    z-index: 1; /* Sit on top */\n"
+"    left: 0;\n"
+"    top: 0;\n"
+"    width: 100%; /* Full width */\n"
+"    height: 100%; /* Full height */\n"
+"    overflow: auto; /* Enable scroll if needed */\n"
+"    background-color: rgb(0,0,0); /* Fallback color */\n"
+"    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */\n"
+"    padding-top: 60px;\n"
+"}\n"
+"\n"
+"/* Modal Content/Box */\n"
+".modal-content {\n"
+"    background-color: #fefefe;\n"
+"    margin: 5% auto 15% auto; /* 5% from the top, 15% from the bottom and centered */\n"
+"    border: 1px solid #888;\n"
+"    width: 80%; /* Could be more or less, depending on screen size */\n"
+"}\n"
+"\n"
+"/* The Close Button (x) */\n"
+".close {\n"
+"    position: absolute;\n"
+"    right: 25px;\n"
+"    top: 0;\n"
+"    color: #000;\n"
+"    font-size: 35px;\n"
+"    font-weight: bold;\n"
+"}\n"
+"\n"
+".close:hover,\n"
+".close:focus {\n"
+"    color: red;\n"
+"    cursor: pointer;\n"
+"}\n"
+"\n"
+"/* Add Zoom Animation */\n"
+".animate {\n"
+"    -webkit-animation: animatezoom 0.6s;\n"
+"    animation: animatezoom 0.6s\n"
+"}\n"
+"\n"
+"@-webkit-keyframes animatezoom {\n"
+"    from {-webkit-transform: scale(0)} \n"
+"    to {-webkit-transform: scale(1)}\n"
+"}\n"
+"    \n"
+"@keyframes animatezoom {\n"
+"    from {transform: scale(0)} \n"
+"    to {transform: scale(1)}\n"
+"}\n"
+"\n"
+"/* Change styles for span and cancel button on extra small screens */\n"
+"@media screen and (max-width: 300px) {\n"
+"    span.psw {\n"
+"       display: block;\n"
+"       float: none;\n"
+"    }\n"
+"    .cancelbtn {\n"
+"       width: 100%;\n"
+"    }\n"
+"}\n"
+"</style>\n"
+"<body>\n"
+"\n"
+"<h2>Modal Login Form</h2>\n"
+"\n"
+"<button onclick=\"document.getElementById('id01').style.display='block'\" style=\"width:auto;\">Login</button>\n"
+"\n"
+"<div id=\"id01\" class=\"modal\">\n"
+"  \n"
+"  <form class=\"modal-content animate\" action=\"/login\" method=\"post\">\n"
+"    <div class=\"imgcontainer\">\n"
+"      <span onclick=\"document.getElementById('id01').style.display='none'\" class=\"close\" title=\"Close Modal\">&times;</span>\n"
+"      <img src=\"img_avatar2.png\" alt=\"Avatar\" class=\"avatar\">\n"
+"    </div>\n"
+"\n"
+"    <div class=\"container\">\n"
+"      <label><b>Username</b></label>\n"
+"      <input type=\"text\" placeholder=\"Enter Username\" name=\"uname\" required>\n"
+"\n"
+"      <label><b>Password</b></label>\n"
+"      <input type=\"password\" placeholder=\"Enter Password\" name=\"psw\" required>\n"
+"        \n"
+"      <button type=\"submit\">Login</button>\n"
+"      <input type=\"checkbox\" checked=\"checked\"> Remember me\n"
+"    </div>\n"
+"\n"
+"    <div class=\"container\" style=\"background-color:#f1f1f1\">\n"
+"      <button type=\"button\" onclick=\"document.getElementById('id01').style.display='none'\" class=\"cancelbtn\">Cancel</button>\n"
+"      <span class=\"psw\">Forgot <a href=\"#\">password?</a></span>\n"
+"    </div>\n"
+"  </form>\n"
+"</div>\n"
+"\n"
+"<script>\n"
+"// Get the modal\n"
+"var modal = document.getElementById('id01');\n"
+"\n"
+"// When the user clicks anywhere outside of the modal, close it\n"
+"window.onclick = function(event) {\n"
+"    if (event.target == modal) {\n"
+"        modal.style.display = \"none\";\n"
+"    }\n"
+"}\n"
+"</script>\n"
+"\n"
+"</body>\n"
+"</html>";
 using namespace std;
 
 void indexCB(HTTPRequest& request)
 {
-    cout << "Index" << endl;
-    char* buffer = new char[10000];
-    int len = request.Recv(buffer, 9999);
-    buffer[len] = 0;
-    cout << "HTTP recv:" << endl;
-    cout << "\tbufferLen: \"" << len << "\"" << endl;
-    cout << "\tbuffer: \"" << buffer << "\"" << endl;
-
+    request.sendResponseHeader(HTTP_OK, MIME_TEXT_HTML);
+    request.Send(loginForm, strlen(loginForm));
 }
 
-void testCB(HTTPRequest& request)
+void loginCB(HTTPRequest& request)
 {
-    cout << "Test" << endl;
+    if (request.method() == HTTP_METHOD_POST)
+    {
+        cout << "Login credentials:" << endl;
+        cout << "\tUsername: \"" << request.params("uname") << "\"" << endl;
+        cout << "\tPassword: \"" << request.params("psw") << "\"" << endl;
+    }
 }
 
 int main(int argc, char** argv)
@@ -27,7 +195,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     HTTPServer server(atoi(argv[1]));
     server.setRootCallback(indexCB);
-    server.addRootURI("Test", testCB);
+    server.addRootURI("login", loginCB);
     try
     {
         server.loop();

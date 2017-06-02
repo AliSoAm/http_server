@@ -42,7 +42,7 @@ TCPServer::TCPServer(uint16_t port): port_(port)
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     if (bind(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) != 0)
         throw runtime_error("bind failed");
-    if (listen(socketFD, 1) != 0)
+    if (listen(socketFD, 5) != 0)
         throw runtime_error("listen failed");
 }
 

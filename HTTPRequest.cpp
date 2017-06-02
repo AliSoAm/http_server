@@ -31,15 +31,14 @@ const char MIMEString[][40] =
     "image/gif",
 };
 
-HTTPRequest::HTTPRequest(TCPRemoteClient client): client_(client), contentLength_(0), remainingBufferLen (0), remainingChunkLen(0), recvComplete(false), headerSent(false)
+HTTPRequest::HTTPRequest(TCPRemoteClient client): client_(client), contentLength_(0), remainingBufferLen (0), remainingChunkLen(0), contentReceived(0), recvComplete(false), headerSent(false)
 {
     remainingBuffer[99] = 0;
     ParseRequest();
     if (contentLength_ != 0 && transferEncoding_ == HTTP_TRANSFER_ENCODING_CHUNKED)
         throw HTTPException(HTTP_BAD_REQUEST, "TE with CL is not allowed");
-        if (transferEncoding_ == HTTP_TRANSFER_ENCODING_NOT_SPECIFIED && contentLength_ == 0)
-            recvComplete = true;
-
+    if (transferEncoding_ == HTTP_TRANSFER_ENCODING_NOT_SPECIFIED && contentLength_ == 0)
+        recvComplete = true;
 }
 
 void HTTPRequest::Close()
@@ -51,12 +50,14 @@ void HTTPRequest::Close()
 void HTTPRequest::ParseRequest()
 {
     char buffer[100];
-    size_t bufferEnd = 0;
+
     string packet, header, payload;
-    size_t headerEnd;
+    size_t headerEnd = 0;
+    size_t bufferEnd = 0;
+    int recvLen = 0;
     do
     {
-        int recvLen = client_.Recv(buffer, 99);
+        recvLen = client_.Recv(buffer, 99);
         if (recvLen <= 0)
         {
             //XXX
@@ -66,7 +67,7 @@ void HTTPRequest::ParseRequest()
         packet += buffer;
         headerEnd = packet.find("\r\n\r\n");
     } while (headerEnd == string::npos);
-    size_t payloadStart = 99 - (bufferEnd - (headerEnd + 4));
+    size_t payloadStart = recvLen - (bufferEnd - (headerEnd + 4));
     remainingBufferLen = bufferEnd - (headerEnd + 4);
     memcpy(remainingBuffer, buffer + payloadStart, remainingBufferLen);
     remainingBuffer[remainingBufferLen] = 0;
@@ -91,7 +92,7 @@ void HTTPRequest::ParseHeader(const string& header)
     while (getline(headerStream, line))
     {
         if (*line.rbegin() == '\r')
-            line.erase(line.length(), 1);
+            line.erase(line.length() - 1);
         size_t colonPosition = line.find(":");
         string name = line.substr(0, colonPosition);
         transform(name.begin(), name.end(), name.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
@@ -99,7 +100,6 @@ void HTTPRequest::ParseHeader(const string& header)
         string value = line.substr(colonPosition + 1);
         transform(value.begin(), value.end(), value.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
         value.erase(remove(value.begin(), value.end(), ' '), value.end());
-        cout << name << ": " << value << endl;
         if (colonPosition == string::npos)
             throw HTTPException(HTTP_BAD_REQUEST);
         else if (name == "host")
@@ -115,8 +115,56 @@ void HTTPRequest::ParseHeader(const string& header)
         else if (name == "content-length")
             contentLength_ = atoi(value.c_str());
     }
+    parseParams();
 }
 
+void HTTPRequest::parseParams()
+{
+    parseURIParams();
+    parsePayloadParams();
+}
+
+void HTTPRequest::parseURIParams()
+{
+    size_t paramsPos = URI_.find('?');
+    if (paramsPos != string::npos)
+    {
+        string paramsStr = URI_.substr(paramsPos + 1);
+        URI_.erase(paramsPos);
+        parseParams(paramsStr);
+    }
+}
+
+void HTTPRequest::parsePayloadParams()
+{
+    if (contentType_ == MIME_APPLICATION_X_WWW_FORM_URLENCODED)
+    {
+        string payload;
+        while (!isRecvCompleted())
+        {
+            char buff[50];
+            int recvLen = Recv(buff, 50);
+            buff[recvLen] = 0;
+            payload += buff;
+        }
+        parseParams(payload);
+    }
+}
+
+void HTTPRequest::parseParams(const string& paramsStr)
+{
+    stringstream params(paramsStr);
+    string param;
+    while (getline(params, param, '&'))
+    {
+        size_t equaleSignPosition = param.find('=');
+        if (equaleSignPosition == string::npos)
+            continue;
+        string name = param.substr(0, equaleSignPosition);
+        string value = param.substr(equaleSignPosition + 1);
+        params_[name] = value;
+    }
+}
 HTTPMethod HTTPRequest::parseMethod(const string& method) const
 {
     if (method == "GET")
@@ -226,8 +274,8 @@ void HTTPRequest::Send(const char* buffer, size_t length)
         {
             sprintf(sendBuffer, "%03x\r\n", remainedLength);
             memcpy(sendBuffer + 5, buffer, remainedLength);
-            sendBuffer[length + 5] = '\r';
-            sendBuffer[length + 6] = '\n';
+            sendBuffer[remainedLength + 5] = '\r';
+            sendBuffer[remainedLength + 6] = '\n';
             if (client_.Send(sendBuffer, remainedLength + 7) != remainedLength + 7)
                 throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
             buffer += remainedLength;
@@ -243,7 +291,7 @@ int HTTPRequest::Recv(char* buffer, size_t length)
     size_t recvedLen = 0;
     if (transferEncoding_ == HTTP_TRANSFER_ENCODING_CHUNKED)
     {
-        while (recvedLen < length)
+        while (recvedLen < length && !isRecvCompleted())
         {
             if (remainingChunkLen > 0)
             {
@@ -262,28 +310,29 @@ int HTTPRequest::Recv(char* buffer, size_t length)
             }
             else
             {
-                int nextChunkReturn = prepareForNextChunk();
-                if (nextChunkReturn < 0)
-                {
-                    if (recvedLen == 0)
-                        return -1;
-                    else
-                        break;
-                }
-                else if (nextChunkReturn == 0)
-                {
-                    recvComplete = true;
-                    break;
-                }
+                prepareForNextChunk();
             }
         }
     }
     else
     {
-        int recvLen = client_.Recv(buffer, length);
-        if (recvLen < 0)
-            return recvLen;
-        recvedLen = recvLen;
+        if (remainingBufferLen > 0)
+        {
+            memcpy(buffer, remainingBuffer, remainingBufferLen);
+            recvedLen = remainingBufferLen;
+            remainingBufferLen = 0;
+            contentReceived += recvedLen;
+        }
+        if (length > recvedLen && contentReceived < contentLength_)
+        {
+            int recvLen = client_.Recv(buffer + recvedLen, length - recvedLen);
+            if (recvLen < 0)
+                throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
+            contentReceived += recvLen;
+            recvedLen += recvLen;
+        }
+        if (contentReceived >= contentLength_)
+            recvComplete = true;
     }
     return recvedLen;
 }
@@ -314,13 +363,12 @@ size_t HTTPRequest::recvRemainingBuffer(char* buffer, size_t length, size_t recv
 int HTTPRequest::recvRemainingChunk(char* buffer, size_t length, size_t recvedLen)
 {
     int recvLen = 0;
-
     if (length < remainingChunkLen)
         recvLen = client_.Recv(buffer + recvedLen, (length - recvedLen));
     else
         recvLen = client_.Recv(buffer + recvedLen, remainingChunkLen);
-    if (recvLen < 0)
-        return recvedLen;
+    if (recvLen <= 0)//XXX <= ?
+        throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
     remainingChunkLen -= recvLen;
     recvedLen += recvLen;
     return recvedLen;
@@ -350,7 +398,7 @@ void HTTPRequest::completeCurrentChunk()
     }
 }
 
-int HTTPRequest::prepareForNextChunk()
+void HTTPRequest::prepareForNextChunk()
 {
     int recvLen = remainingBufferLen;
     size_t startChunk = 0;
@@ -359,7 +407,7 @@ int HTTPRequest::prepareForNextChunk()
     {
         recvLen = client_.Recv(remainingBuffer, 99);
         if (recvLen <= 0)
-            return -1;
+            throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
         remainingBuffer[recvLen] = 0;
         chunk += remainingBuffer;
         startChunk = chunk.find("\r\n") + 2 - remainingBufferLen;
@@ -369,16 +417,17 @@ int HTTPRequest::prepareForNextChunk()
         startChunk = chunk.find("\r\n") + 2;
     }
     if (chunk.find("\r\n") == string::npos)
-        return -1;
+        throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
     remainingChunkLen = strtol(chunk.c_str(), NULL, 16);
     if (remainingChunkLen == 0)
     {
-        return 0;
+        recvComplete = true;
+        return;
     }
     remainingBufferLen = recvLen - startChunk;
     memcpy(remainingBuffer, remainingBuffer + startChunk, remainingBufferLen);
     remainingBuffer[remainingBufferLen] = 0;
-    return 1;
+    return;
 }
 
 bool HTTPRequest::isHeaderSent() const
@@ -399,8 +448,13 @@ void HTTPRequest::sendResponseHeader(unsigned int responseCode, MIMEType content
     response << "HTTP/1.1 " << to_string(responseCode) << " " << getHTTPResponseMessage(responseCode) << "\r\n"
              << "Content-Type: " << MIMEString[contentType] << "\r\n"
              << "Connection: close\r\n"
-             << "Transfer-Encoding: Chunked\r\n"
+             << "Transfer-Encoding:chunked\r\n"
              << "\r\n";
     client_.Send(response.str().c_str(), response.str().length());
     headerSent = true;
+}
+
+string HTTPRequest::params(const string& name)
+{
+    return params_[name];
 }
