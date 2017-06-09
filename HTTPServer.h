@@ -6,11 +6,12 @@
 #include "HTTPRequest.h"
 #include <cstdint>
 #include <vector>
+#include <memory>
 
 typedef void(*URICallback)(HTTPRequest& request);
 struct subURI
 {
-    std::vector<subURI*> children;
+    std::vector<std::shared_ptr<subURI>> children;
     std::string name;
     URICallback callback;
     subURI(): callback(NULL) {}
@@ -22,9 +23,9 @@ public:
                             HTTPServer                          (std::uint16_t port);
     void                    loop                                ();
     void                    setRootCallback                     (URICallback callback);
-    subURI*                 addRootURI                          (const std::string& name,
+    std::shared_ptr<subURI> addRootURI                          (const std::string& name,
                                                                  URICallback callback);
-    subURI*                 addURI                              (subURI& parent,
+    std::shared_ptr<subURI> addURI                              (std::shared_ptr<subURI> parent,
                                                                  const std::string& name,
                                                                  URICallback callback);
 private:

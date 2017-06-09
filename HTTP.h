@@ -26,7 +26,7 @@ enum MIMEType
     MIME_TYPE_NOT_SPECIFIED = 0,
     MIME_ALL,
     MIME_APPLICATION_JAVASCRIPT,
-    MIME_APLICATION_JSON,
+    MIME_APPICATION_JSON,
     MIME_APPLICATION_X_WWW_FORM_URLENCODED,
     MIME_APPLICATION_XML,
     MIME_APPLICATION_ZIP,
@@ -78,15 +78,15 @@ enum HTTPTransferEncoding
 #define HTTP_INTERNAL_SERVER_ERROR                  500
 #define HTTP_NOT_IMPLEMENTED                        501
 
-const std::string& getHTTPResponseMessage(unsigned int responseCode);
+std::string getHTTPResponseMessage(unsigned int responseCode);
 
 class HTTPException: public std::exception
 {
 public:
-    HTTPException(int HTTPErrorCode, const char* what);
-    HTTPException(int HTTPErrorCode);
+    HTTPException(unsigned int HTTPErrorCode, const char* what);
+    HTTPException(unsigned int HTTPErrorCode);
     int HTTPErrorCode() const;
-    virtual const char* what() const throw();
+    virtual const char* what() const noexcept;
 private:
     int HTTPErrorCode_;
     char what_[50];

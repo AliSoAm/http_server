@@ -2,19 +2,31 @@
 #define TCP_SERVER_H
 #include <cstdint>
 #include <string>
+#include <exception>
 
 typedef int Socket;
+class TCPServerException: public std::exception
+{
+public:
+    TCPServerException(const char* what);
+    virtual const char* what() const noexcept;
+private:
+    char what_[50];
+};
+
 class TCPRemoteClient
 {
 public:
                             TCPRemoteClient                 (Socket socket);
-    int                     Send                            (const char* buffer,
+    size_t                  Send                            (const char* buffer,
                                                              size_t length);
-    int                     Recv                            (char* buffer,
+    size_t                  Recv                            (char* buffer,
                                                              size_t length);
+    bool                    isOpen                          ()                                     const;
     void                    Close                           ();
 private:
     Socket                  socketFD;
+    bool                    closed;
 };
 
 class TCPServer

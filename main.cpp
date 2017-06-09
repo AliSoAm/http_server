@@ -1,6 +1,6 @@
 #include <iostream>
 #include "HTTPServer.h"
-
+#include <list>
 char loginForm[] =
 "<!DOCTYPE html>\n"
 "<html>\n"
@@ -185,6 +185,20 @@ void loginCB(HTTPRequest& request)
         cout << "Login credentials:" << endl;
         cout << "\tUsername: \"" << request.params("uname") << "\"" << endl;
         cout << "\tPassword: \"" << request.params("psw") << "\"" << endl;
+    }
+    else if (request.method() == HTTP_METHOD_PUT)
+    {
+        string payload;
+        char buff[104];
+        size_t recvedLen = 0;
+        while (!request.isRecvCompleted())
+        {
+            recvedLen = request.Recv(buff,49);
+            buff[recvedLen] = 0;
+            //payload += buff;
+            cout << "buff: \"" << buff << "\"" << strlen(buff) << "==" << recvedLen << endl;
+        }
+        cout << "Payload length: " << payload.length() << endl;
     }
 }
 

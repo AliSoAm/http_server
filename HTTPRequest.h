@@ -19,10 +19,10 @@ public:
     HTTPConnection                      connection                      ()                                                  const;
     HTTPTransferEncoding                transferEncoding                ()                                                  const;
     void                                sendResponseHeader              (unsigned int responseCode,
-                                                             MIMEType contentType);
+                                                                         MIMEType contentType);
     void                                Send                            (const char* buffer,
                                                                          size_t length);
-    int                                 Recv                            (char* buffer,
+    size_t                              Recv                            (char* buffer,
                                                                          size_t length);
     bool                                isHeaderSent                    ()                                                  const;
     bool                                isRecvCompleted                 ()                                                  const;
@@ -58,7 +58,7 @@ private:
     void                                parseURIParams                      ();
     void                                parsePayloadParams                  ();
     void                                prepareForNextChunk                 ();
-    int                                 recvRemainingChunk                  (char* buffer,
+    size_t                              recvRemainingChunk                  (char* buffer,
                                                                              size_t length,
                                                                              size_t recvedLen);
     size_t                              recvRemainingBuffer                 (char* buffer,

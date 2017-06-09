@@ -11,23 +11,65 @@
 #include <unistd.h>
 using namespace std;
 
-TCPRemoteClient::TCPRemoteClient(int socket): socketFD(socket)
+TCPServerException::TCPServerException(const char* what)
 {
-
+    strncpy(what_, what, 49);
+    what_[49] = '\0';
 }
 
-int TCPRemoteClient::Send(const char* buffer, size_t length)
+const char* TCPServerException::what() const noexcept
 {
-    return send(socketFD, buffer, length, 0);
+    return what_;
 }
 
-int TCPRemoteClient::Recv(char* buffer, size_t length)
+TCPRemoteClient::TCPRemoteClient(int socket): socketFD(socket), closed(false)
 {
-    return recv(socketFD, buffer, length, 0);
+    if (socketFD < 0)
+        throw TCPServerException("Bad socket");
+}
+
+size_t TCPRemoteClient::Send(const char* buffer, size_t length)
+{
+    if (!isOpen())
+        TCPServerException("Sending to closed connection");
+    int sentLen = send(socketFD, buffer, length, 0);
+    if (sentLen < 0)
+        throw TCPServerException("Send faild");
+    return sentLen;
+}
+
+size_t TCPRemoteClient::Recv(char* buffer, size_t length)
+{
+    if (!isOpen())
+        TCPServerException("Receiving from closed connection");
+    size_t recvedLen = 0;
+    fd_set read_fd_set;
+    FD_ZERO(&read_fd_set);
+    FD_SET(socketFD, &read_fd_set);
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+    select(socketFD + 1, &read_fd_set, NULL, NULL, &timeout);
+    if (FD_ISSET(socketFD, &read_fd_set))
+    {
+        int recvLen =  recv(socketFD, buffer, length, 0);
+        if (recvLen < 0)
+            throw TCPServerException("Recv faild");
+        if (recvLen == 0)
+            closed = true;
+        recvedLen = recvLen;
+    }
+    return recvedLen;
+}
+
+bool TCPRemoteClient::isOpen() const
+{
+    return !closed;
 }
 
 void TCPRemoteClient::Close()
 {
+    closed = true;
     close(socketFD);
 }
 
@@ -35,15 +77,15 @@ TCPServer::TCPServer(uint16_t port): port_(port)
 {
         struct sockaddr_in serverAddress;
     if ((socketFD = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        throw runtime_error("socket failed");
+        throw TCPServerException("socket failed");
     memset(&serverAddress, 0, sizeof(serverAddress));
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     if (bind(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) != 0)
-        throw runtime_error("bind failed");
+        throw TCPServerException("bind failed");
     if (listen(socketFD, 5) != 0)
-        throw runtime_error("listen failed");
+        throw TCPServerException("listen failed");
 }
 
 TCPRemoteClient TCPServer::Accept()
@@ -52,5 +94,7 @@ TCPRemoteClient TCPServer::Accept()
     struct sockaddr_in client_addr;
     unsigned int addrlen = sizeof(client_addr);
     clientFD = accept(socketFD, (struct sockaddr*)&client_addr, &addrlen);
+    if (clientFD < 0)
+        throw TCPServerException("Accept failed");
     return TCPRemoteClient(clientFD);
 }
