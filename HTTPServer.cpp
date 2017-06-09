@@ -28,7 +28,7 @@ void HTTPServer::loop()
         }
         catch (...)
         {
-            cout << "Unexpected exception !!!!! " << endl;
+            cerr << "Unexpected exception !!!!! " << endl;
         }
     }
 }
@@ -64,7 +64,6 @@ void HTTPServer::DispatchRequest(HTTPRequest& request, TCPRemoteClient& client)
         {
             throw HTTPException(HTTP_NOT_FOUND);
         }
-        cerr << "!!!" << endl;
         if (!request.isHeaderSent())
             HTTPServerErrorResponse(HTTP_NOT_IMPLEMENTED, client);
     }
@@ -84,7 +83,6 @@ void HTTPServer::DispatchRequest(HTTPRequest& request, TCPRemoteClient& client)
         if (!request.isHeaderSent())
             HTTPServerErrorResponse(500, client);
     }
-    cerr << "!!!!" << endl;
 }
 
 void HTTPServer::HandleClient(TCPRemoteClient& client)
@@ -121,7 +119,7 @@ void HTTPServer::HTTPServerErrorResponse(unsigned int errorCode, TCPRemoteClient
                  << "Connection: close\r\n"
                  << "Content-Length: 0\r\n"
                  << "\r\n";
-        client.Send(response.str().c_str(), response.str().length());
+                   client.Send(response.str().c_str(), response.str().length());
     }
 }
 

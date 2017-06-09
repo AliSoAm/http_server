@@ -39,7 +39,7 @@ private:
     HTTPTransferEncoding                transferEncoding_;
     size_t                              contentLength_;
     std::vector<char>                   payloadRemaining;
-    char                                remainingBuffer[100];
+    char                                remainingBuffer[150];
     size_t                              remainingBufferLen;
     size_t                              remainingChunkLen;
     size_t                              contentReceived;

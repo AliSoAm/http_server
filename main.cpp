@@ -189,15 +189,16 @@ void loginCB(HTTPRequest& request)
     else if (request.method() == HTTP_METHOD_PUT)
     {
         string payload;
-        char buff[104];
+        char buff[50];
         size_t recvedLen = 0;
         while (!request.isRecvCompleted())
         {
             recvedLen = request.Recv(buff,49);
             buff[recvedLen] = 0;
-            //payload += buff;
-            cout << "buff: \"" << buff << "\"" << strlen(buff) << "==" << recvedLen << endl;
+            payload += buff;
+//            cout << "buff: \"" << buff << "\"" << strlen(buff) << "==" << recvedLen << endl;
         }
+        //cout << "payload: \"" << payload     << "\"" << endl;
         cout << "Payload length: " << payload.length() << endl;
     }
 }

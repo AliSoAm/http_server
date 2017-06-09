@@ -91,7 +91,7 @@ void HTTPRequest::ParseHeader(const string& header)
     while (getline(headerStream, line))
     {
         if (line.back() == '\r')
-            line.pop();
+            line.pop_back();
         size_t colonPosition = line.find(":");
         string name = line.substr(0, colonPosition);
         transform(name.begin(), name.end(), name.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
@@ -317,17 +317,18 @@ size_t HTTPRequest::Recv(char* buffer, size_t length)
     {
         if (remainingBufferLen > 0)///XXX
         {
-            size_t readLen = (remainingBufferLen > length ? length : remainingBufferLen);
+            size_t readLen = min(remainingBufferLen, length);
             memcpy(buffer, remainingBuffer, readLen);
-            memcpy(remainingBuffer, remainingBuffer + readLen, remainingBufferLen - readLen);
-            recvedLen = remainingBufferLen;
-            remainingBufferLen = 0;
+            memmove(remainingBuffer, remainingBuffer + readLen, remainingBufferLen - readLen);
+            recvedLen = readLen;
+            remainingBufferLen -= recvedLen;
             contentReceived += recvedLen;
         }
         if (length > recvedLen && contentReceived < contentLength_)
         {
-            size_t recvLen = client_.Recv(buffer + recvedLen, length - recvedLen);
-            if (recvLen == 0)
+            size_t readLen = min(length - recvedLen, contentLength_ - contentReceived);
+            size_t recvLen = client_.Recv(buffer + recvedLen, readLen);
+            if (recvLen != readLen)
                 throw HTTPException(HTTP_BAD_REQUEST);
             contentReceived += recvLen;
             recvedLen += recvLen;
@@ -340,23 +341,13 @@ size_t HTTPRequest::Recv(char* buffer, size_t length)
 
 size_t HTTPRequest::recvRemainingBuffer(char* buffer, size_t length, size_t recvedLen)
 {
-    size_t readyLen = (remainingChunkLen > remainingBufferLen) ? remainingBufferLen : remainingChunkLen;
-    if (length <= readyLen)
-    {
-        memcpy(buffer + recvedLen, remainingBuffer, length);
-        recvedLen += length;
-        remainingChunkLen -= length;
-        remainingBufferLen -= length;
-        memcpy(remainingBuffer, remainingBuffer + length, remainingBufferLen);
-    }
-    else
-    {
-        memcpy(buffer + recvedLen, remainingBuffer, readyLen);
-        recvedLen += readyLen;
-        remainingChunkLen -= readyLen;
-        remainingBufferLen -= readyLen;
-        memcpy(remainingBuffer, remainingBuffer + readyLen, remainingBufferLen);
-    }
+    size_t readyLen = min(remainingChunkLen, remainingBufferLen);
+    size_t readLen = min(length - recvedLen, readyLen);
+    memcpy(buffer + recvedLen, remainingBuffer, readLen);
+    recvedLen += readLen;
+    remainingChunkLen -= readLen;
+    remainingBufferLen -= readLen;
+    memmove(remainingBuffer, remainingBuffer + readLen, remainingBufferLen);
     remainingBuffer[remainingBufferLen] = 0;
     return recvedLen;
 }
@@ -364,11 +355,9 @@ size_t HTTPRequest::recvRemainingBuffer(char* buffer, size_t length, size_t recv
 size_t HTTPRequest::recvRemainingChunk(char* buffer, size_t length, size_t recvedLen)
 {
     int recvLen = 0;
-    if (length < remainingChunkLen)
-        recvLen = client_.Recv(buffer + recvedLen, (length - recvedLen));
-    else
-        recvLen = client_.Recv(buffer + recvedLen, remainingChunkLen);
-    if (recvLen == 0)
+    size_t readLen = min((length - recvedLen), remainingChunkLen);
+    recvLen = client_.Recv(buffer + recvedLen, readLen);
+    if (recvLen != readLen)
         throw HTTPException(HTTP_BAD_REQUEST);
     remainingChunkLen -= recvLen;
     recvedLen += recvLen;
@@ -379,7 +368,7 @@ void HTTPRequest::completeCurrentChunk()
 {
     if (remainingBufferLen >= 2)
     {
-        memcpy(remainingBuffer, remainingBuffer + 2, remainingBufferLen - 2);
+        memmove(remainingBuffer, remainingBuffer + 2, remainingBufferLen - 2);
         remainingBufferLen -= 2;
         remainingBuffer[remainingBufferLen] = 0;
     }
@@ -426,7 +415,7 @@ void HTTPRequest::prepareForNextChunk()
         return;
     }
     remainingBufferLen = recvLen - startChunk;
-    memcpy(remainingBuffer, remainingBuffer + startChunk, remainingBufferLen);
+    memmove(remainingBuffer, remainingBuffer + startChunk, remainingBufferLen);
     remainingBuffer[remainingBufferLen] = 0;
     return;
 }
