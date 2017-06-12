@@ -172,28 +172,28 @@ char loginForm[] =
 "</html>";
 using namespace std;
 
-void indexCB(HTTPRequest& request)
+void indexCB(shared_ptr<HTTPRequest> request)
 {
-    request.sendResponseHeader(HTTP_OK, MIME_TEXT_HTML);
-    request.Send(loginForm, strlen(loginForm));
+    request->sendResponseHeader(HTTP_OK, MIME_TEXT_HTML);
+    request->Send(loginForm, strlen(loginForm));
 }
 
-void loginCB(HTTPRequest& request)
+void loginCB(shared_ptr<HTTPRequest> request)
 {
-    if (request.method() == HTTP_METHOD_POST)
+    if (request->method() == HTTP_METHOD_POST)
     {
         cout << "Login credentials:" << endl;
-        cout << "\tUsername: \"" << request.params("uname") << "\"" << endl;
-        cout << "\tPassword: \"" << request.params("psw") << "\"" << endl;
+        cout << "\tUsername: \"" << request->params("uname") << "\"" << endl;
+        cout << "\tPassword: \"" << request->params("psw") << "\"" << endl;
     }
-    else if (request.method() == HTTP_METHOD_PUT)
+    else if (request->method() == HTTP_METHOD_PUT)
     {
         string payload;
         char buff[50];
         size_t recvedLen = 0;
-        while (!request.isRecvCompleted())
+        while (!request->isRecvCompleted())
         {
-            recvedLen = request.Recv(buff,49);
+            recvedLen = request->Recv(buff,49);
             buff[recvedLen] = 0;
             payload += buff;
 //            cout << "buff: \"" << buff << "\"" << strlen(buff) << "==" << recvedLen << endl;

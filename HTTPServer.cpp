@@ -33,12 +33,12 @@ void HTTPServer::loop()
     }
 }
 
-void HTTPServer::DispatchRequest(HTTPRequest& request, TCPRemoteClient& client)
+void HTTPServer::DispatchRequest(shared_ptr<HTTPRequest> request, TCPRemoteClient& client)
 {
     try
     {
-        cout << "dispatching->URI: "<< request.URI() << endl;
-        string URI = request.URI();
+        cout << "dispatching->URI: "<< request->URI() << endl;
+        string URI = request->URI();
         string name = "";
         size_t slashPos;
         subURI* current = &root;
@@ -64,13 +64,13 @@ void HTTPServer::DispatchRequest(HTTPRequest& request, TCPRemoteClient& client)
         {
             throw HTTPException(HTTP_NOT_FOUND);
         }
-        if (!request.isHeaderSent())
+        if (!request->isHeaderSent())
             HTTPServerErrorResponse(HTTP_NOT_IMPLEMENTED, client);
     }
     catch (HTTPException& e)
     {
         cout << "HTTP exception-> Code: " << e.HTTPErrorCode() << " ->>>> " << e.what() << endl;
-        if (!request.isHeaderSent())
+        if (!request->isHeaderSent())
             HTTPServerErrorResponse(e.HTTPErrorCode(), client);
     }
     catch (TCPServerException &e)
@@ -80,7 +80,7 @@ void HTTPServer::DispatchRequest(HTTPRequest& request, TCPRemoteClient& client)
     catch (exception &e)
     {
         cout << "Un handled exception->>>>" << e.what() << endl;
-        if (!request.isHeaderSent())
+        if (!request->isHeaderSent())
             HTTPServerErrorResponse(500, client);
     }
 }
@@ -89,9 +89,9 @@ void HTTPServer::HandleClient(TCPRemoteClient& client)
 {
     try
     {
-        HTTPRequest request(client);
+        auto request = make_shared<HTTPRequest>(client);
         DispatchRequest(request, client);
-        request.Close();
+        request->Close();
     }
     catch (HTTPException& e)
     {
@@ -125,22 +125,14 @@ void HTTPServer::HTTPServerErrorResponse(unsigned int errorCode, TCPRemoteClient
 
 shared_ptr<subURI> HTTPServer::addRootURI(const string& name, URICallback callback)
 {
-    shared_ptr<subURI> ptr;
-    ptr.reset(new subURI);
-    root.children.push_back(ptr);
-    ptr->name = name;
-    ptr->callback = callback;
-    return ptr;
+    root.children.emplace_back(make_shared<subURI>(name, callback));
+    return root.children.back();
 }
 
 shared_ptr<subURI> HTTPServer::addURI(shared_ptr<subURI> parent, const string& name, URICallback callback)
 {
-    shared_ptr<subURI> ptr;
-    ptr.reset(new subURI);
-    parent->children.push_back(ptr);
-    ptr->name = name;
-    ptr->callback = callback;
-    return ptr;
+    parent->children.emplace_back(make_shared<subURI>(name, callback));
+    return parent->children.back();
 }
 
 void HTTPServer::setRootCallback(URICallback callback)

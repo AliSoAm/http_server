@@ -7,14 +7,16 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
+#include <functional>
 
-typedef void(*URICallback)(HTTPRequest& request);
+typedef std::function<void(std::shared_ptr<HTTPRequest>)> URICallback;
 struct subURI
 {
     std::vector<std::shared_ptr<subURI>> children;
     std::string name;
     URICallback callback;
-    subURI(): callback(NULL) {}
+    subURI(): callback(nullptr) {}
+    subURI(const std::string& name, URICallback callback): name(name), callback(callback) {}
 };
 
 class HTTPServer
@@ -32,7 +34,7 @@ private:
     TCPServer               tcpServer;
     subURI                  root;
     void                    HandleClient                        (TCPRemoteClient& client);
-    void                    DispatchRequest                     (HTTPRequest& request,
+    void                    DispatchRequest                     (std::shared_ptr<HTTPRequest> request,
                                                                  TCPRemoteClient& client);
     void                    HTTPServerErrorResponse             (unsigned int errorCode,
                                                                  TCPRemoteClient& client);
