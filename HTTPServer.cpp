@@ -45,7 +45,12 @@ void HTTPServer::DispatchRequest(shared_ptr<HTTPRequest> request, TCPRemoteClien
         do
         {
             slashPos = URI.find("/", 1);
-            name = URI.substr(1, slashPos);
+            size_t endNamePos;
+            if (slashPos != string::npos)
+                endNamePos = slashPos - 1;
+            else
+                endNamePos = string::npos;
+            name = URI.substr(1, endNamePos);
             cout << "\tname: \"" << name << "\"" << endl;
             cout << "\tremaining URI: \"" << URI << "\"" << endl;
             auto next = find_if(current->children.begin(), current->children.end(), [&](shared_ptr<subURI> s){return s->name == name;});
@@ -79,7 +84,7 @@ void HTTPServer::DispatchRequest(shared_ptr<HTTPRequest> request, TCPRemoteClien
     }
     catch (exception &e)
     {
-        cout << "Un handled exception->>>>" << e.what() << endl;
+        cout << "STD exception->>>>" << e.what() << endl;
         if (!request->isHeaderSent())
             HTTPServerErrorResponse(500, client);
     }

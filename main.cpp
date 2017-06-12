@@ -203,6 +203,15 @@ void loginCB(shared_ptr<HTTPRequest> request)
     }
 }
 
+void loginCB2(shared_ptr<HTTPRequest> request)
+{
+    if (request->method() == HTTP_METHOD_GET)
+    {
+        request->sendResponseHeader(HTTP_OK, MIME_TEXT_HTML);
+        request->Send("ABCDEFG", strlen("ABCDEFG"));
+    }
+}
+
 int main(int argc, char** argv)
 {
 
@@ -210,7 +219,8 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     HTTPServer server(atoi(argv[1]));
     server.setRootCallback(indexCB);
-    server.addRootURI("login", loginCB);
+    auto i = server.addRootURI("login", loginCB);
+    server.addURI(i, "login", loginCB);
     try
     {
         server.loop();
