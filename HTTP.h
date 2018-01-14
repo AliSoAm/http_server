@@ -35,6 +35,7 @@ enum MIMEType
     MIME_AUDIO_vorbis,
     MIME_MULTIPART_FORM_DATA,
     MIME_TEXT_CSS,
+    MIME_TEXT_JAVASCRIPT,
     MIME_TEXT_HTML,
     MIME_TEXT_PLAIN,
     MIME_IMAGE_PNG,
@@ -69,6 +70,7 @@ enum HTTPTransferEncoding
 #define HTTP_NOT_MODIFIED                           304
 
 #define HTTP_BAD_REQUEST                            400
+#define HTTP_UNAUTHORIZED                           401
 #define HTTP_FORBIDDEN                              403
 #define HTTP_NOT_FOUND                              404
 #define HTTP_METHOD_NOT_ALLOWED                     405

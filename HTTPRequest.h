@@ -28,6 +28,9 @@ public:
     bool                                isRecvCompleted                 ()                                                  const;
     void                                Close                           ();
     std::string                         params                          (const std::string& name);
+    std::string                         headerParams                    (const std::string& name);
+    void                                addResponseHeaderParameter      (const std::string& name,
+                                                                         const std::string& value);
 private:
     TCPRemoteClient                     client_;
     HTTPMethod                          method_;
@@ -45,14 +48,16 @@ private:
     size_t                              contentReceived;
     bool                                recvComplete;
     bool                                headerSent;
+    std::string                         responseHeaderParams;
+    std::map<std::string, std::string>  headerParams_;
     std::map<std::string, std::string>  params_;
     void                                ParseRequest                        ();
     void                                ParseHeader                         (const std::string& header);
     HTTPMethod                          parseMethod                         (const std::string& method)                     const;
-    MIMEType                            parseContentType                    (const std::string& contentType)                const;
-    HTTPConnection                      parseConnection                     (const std::string& connection)                 const;
-    HTTPTransferEncoding                parseTransferEncoding               (const std::string& transferEncoding)           const;
-    std::vector<MIMEType>               parseAccept                         (const std::string& accept)                     const;
+    MIMEType                            parseContentType                    (std::string contentType)                       const;
+    HTTPConnection                      parseConnection                     (std::string connection)                        const;
+    HTTPTransferEncoding                parseTransferEncoding               (std::string transferEncoding)                  const;
+    std::vector<MIMEType>               parseAccept                         (std::string accept)                            const;
     void                                parseParams                         ();
     void                                parseParams                         (const std::string& paramsStr);
     void                                parseURIParams                      ();

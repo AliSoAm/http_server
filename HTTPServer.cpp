@@ -78,10 +78,6 @@ void HTTPServer::DispatchRequest(shared_ptr<HTTPRequest> request, TCPRemoteClien
         if (!request->isHeaderSent())
             HTTPServerErrorResponse(e.HTTPErrorCode(), client);
     }
-    catch (TCPServerException &e)
-    {
-        cout << "TCPServer Exception->>>>" << e.what() << endl;
-    }
     catch (exception &e)
     {
         cout << "STD exception->>>>" << e.what() << endl;

@@ -1,226 +1,223 @@
-#include <iostream>
 #include "HTTPServer.h"
-#include <list>
-char loginForm[] =
-"<!DOCTYPE html>\n"
-"<html>\n"
-"<style>\n"
-"/* Full-width input fields */\n"
-"input[type=text], input[type=password] {\n"
-"    width: 100%;\n"
-"    padding: 12px 20px;\n"
-"    margin: 8px 0;\n"
-"    display: inline-block;\n"
-"    border: 1px solid #ccc;\n"
-"    box-sizing: border-box;\n"
-"}\n"
-"\n"
-"/* Set a style for all buttons */\n"
-"button {\n"
-"    background-color: #4CAF50;\n"
-"    color: white;\n"
-"    padding: 14px 20px;\n"
-"    margin: 8px 0;\n"
-"    border: none;\n"
-"    cursor: pointer;\n"
-"    width: 100%;\n"
-"}\n"
-"\n"
-"button:hover {\n"
-"    opacity: 0.8;\n"
-"}\n"
-"\n"
-"/* Extra styles for the cancel button */\n"
-".cancelbtn {\n"
-"    width: auto;\n"
-"    padding: 10px 18px;\n"
-"    background-color: #f44336;\n"
-"}\n"
-"\n"
-"/* Center the image and position the close button */\n"
-".imgcontainer {\n"
-"    text-align: center;\n"
-"    margin: 24px 0 12px 0;\n"
-"    position: relative;\n"
-"}\n"
-"\n"
-"img.avatar {\n"
-"    width: 40%;\n"
-"    border-radius: 50%;\n"
-"}\n"
-"\n"
-".container {\n"
-"    padding: 16px;\n"
-"}\n"
-"\n"
-"span.psw {\n"
-"    float: right;\n"
-"    padding-top: 16px;\n"
-"}\n"
-"\n"
-"/* The Modal (background) */\n"
-".modal {\n"
-"    display: none; /* Hidden by default */\n"
-"    position: fixed; /* Stay in place */\n"
-"    z-index: 1; /* Sit on top */\n"
-"    left: 0;\n"
-"    top: 0;\n"
-"    width: 100%; /* Full width */\n"
-"    height: 100%; /* Full height */\n"
-"    overflow: auto; /* Enable scroll if needed */\n"
-"    background-color: rgb(0,0,0); /* Fallback color */\n"
-"    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */\n"
-"    padding-top: 60px;\n"
-"}\n"
-"\n"
-"/* Modal Content/Box */\n"
-".modal-content {\n"
-"    background-color: #fefefe;\n"
-"    margin: 5% auto 15% auto; /* 5% from the top, 15% from the bottom and centered */\n"
-"    border: 1px solid #888;\n"
-"    width: 80%; /* Could be more or less, depending on screen size */\n"
-"}\n"
-"\n"
-"/* The Close Button (x) */\n"
-".close {\n"
-"    position: absolute;\n"
-"    right: 25px;\n"
-"    top: 0;\n"
-"    color: #000;\n"
-"    font-size: 35px;\n"
-"    font-weight: bold;\n"
-"}\n"
-"\n"
-".close:hover,\n"
-".close:focus {\n"
-"    color: red;\n"
-"    cursor: pointer;\n"
-"}\n"
-"\n"
-"/* Add Zoom Animation */\n"
-".animate {\n"
-"    -webkit-animation: animatezoom 0.6s;\n"
-"    animation: animatezoom 0.6s\n"
-"}\n"
-"\n"
-"@-webkit-keyframes animatezoom {\n"
-"    from {-webkit-transform: scale(0)} \n"
-"    to {-webkit-transform: scale(1)}\n"
-"}\n"
-"    \n"
-"@keyframes animatezoom {\n"
-"    from {transform: scale(0)} \n"
-"    to {transform: scale(1)}\n"
-"}\n"
-"\n"
-"/* Change styles for span and cancel button on extra small screens */\n"
-"@media screen and (max-width: 300px) {\n"
-"    span.psw {\n"
-"       display: block;\n"
-"       float: none;\n"
-"    }\n"
-"    .cancelbtn {\n"
-"       width: 100%;\n"
-"    }\n"
-"}\n"
-"</style>\n"
-"<body>\n"
-"\n"
-"<h2>Modal Login Form</h2>\n"
-"\n"
-"<button onclick=\"document.getElementById('id01').style.display='block'\" style=\"width:auto;\">Login</button>\n"
-"\n"
-"<div id=\"id01\" class=\"modal\">\n"
-"  \n"
-"  <form class=\"modal-content animate\" action=\"/login\" method=\"post\">\n"
-"    <div class=\"imgcontainer\">\n"
-"      <span onclick=\"document.getElementById('id01').style.display='none'\" class=\"close\" title=\"Close Modal\">&times;</span>\n"
-"      <img src=\"img_avatar2.png\" alt=\"Avatar\" class=\"avatar\">\n"
-"    </div>\n"
-"\n"
-"    <div class=\"container\">\n"
-"      <label><b>Username</b></label>\n"
-"      <input type=\"text\" placeholder=\"Enter Username\" name=\"uname\" required>\n"
-"\n"
-"      <label><b>Password</b></label>\n"
-"      <input type=\"password\" placeholder=\"Enter Password\" name=\"psw\" required>\n"
-"        \n"
-"      <button type=\"submit\">Login</button>\n"
-"      <input type=\"checkbox\" checked=\"checked\"> Remember me\n"
-"    </div>\n"
-"\n"
-"    <div class=\"container\" style=\"background-color:#f1f1f1\">\n"
-"      <button type=\"button\" onclick=\"document.getElementById('id01').style.display='none'\" class=\"cancelbtn\">Cancel</button>\n"
-"      <span class=\"psw\">Forgot <a href=\"#\">password?</a></span>\n"
-"    </div>\n"
-"  </form>\n"
-"</div>\n"
-"\n"
-"<script>\n"
-"// Get the modal\n"
-"var modal = document.getElementById('id01');\n"
-"\n"
-"// When the user clicks anywhere outside of the modal, close it\n"
-"window.onclick = function(event) {\n"
-"    if (event.target == modal) {\n"
-"        modal.style.display = \"none\";\n"
-"    }\n"
-"}\n"
-"</script>\n"
-"\n"
-"</body>\n"
-"</html>";
-using namespace std;
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <string>
+#include "json.hpp"
+#include "Base64.h"
 
-void indexCB(shared_ptr<HTTPRequest> request)
+using namespace std;
+using json = nlohmann::json;
+
+bool MCBs[8] = {true, false, true, false, true, true, true, false};
+bool Conductors[8];
+
+void athuentication(shared_ptr<HTTPRequest> request)
 {
-    request->sendResponseHeader(HTTP_OK, MIME_TEXT_HTML);
-    request->Send(loginForm, strlen(loginForm));
+    string ath;
+    try
+    {
+        ath = request->headerParams("authorization");
+    }
+    catch (...)
+    {
+        throw HTTPException(HTTP_UNAUTHORIZED);
+    }
+    if (ath.find("Basic ") == string::npos)
+        throw HTTPException(HTTP_BAD_REQUEST);
+    ath = ath.substr(6);
+    auto a = base64Decode(ath);
+    a.push_back('\0');
+    string cred = (char*)a.data();
+    if (cred.find(":") == string::npos)
+        throw HTTPException(HTTP_BAD_REQUEST);
+    string username = cred.substr(0, cred.find(":"));
+    string password = cred.substr(cred.find(":") + 1);
+    if (username != "admin" || password != "1234")
+        throw HTTPException(HTTP_FORBIDDEN);
 }
 
-void loginCB(shared_ptr<HTTPRequest> request)
+static void MCBsGet(shared_ptr<HTTPRequest> request)
 {
-    if (request->method() == HTTP_METHOD_POST)
+    json j;
+    for (auto i = 1; i <= 8; i++)
     {
-        cout << "Login credentials:" << endl;
-        cout << "\tUsername: \"" << request->params("uname") << "\"" << endl;
-        cout << "\tPassword: \"" << request->params("psw") << "\"" << endl;
+        json row;
+        row["id"] = i;
+        bool state = false;
+        state = MCBs[i];
+        if (state == true)
+            row["state"] = "ON";
+        else
+            row["state"] = "OFF";
+        row["current"] = to_string(i) + "A";
+        j += row;
+    }
+    request->sendResponseHeader(HTTP_OK, MIME_APPICATION_JSON);
+    string payload = j.dump();
+    request->Send(payload.c_str(), payload.length());
+}
+
+static void conductorsGet(shared_ptr<HTTPRequest> request)
+{
+    json j;
+    for (auto i = 1; i <= 8; i++)
+    {
+        json row;
+        row["id"] = i;
+        bool state = false;
+        state = Conductors[i];
+        if (state == true)
+            row["state"] = "ON";
+        else
+            row["state"] = "OFF";
+        j += row;
+    }
+    request->sendResponseHeader(HTTP_OK, MIME_APPICATION_JSON);
+    string payload = j.dump();
+    request->Send(payload.c_str(), payload.length());
+}
+
+
+static void conductorState(unsigned int id, string state)
+{
+    if (id >= 1 && id <= 8)
+    {
+      if (state == "ON")
+        Conductors[id] = true;
+      else if (state == "OFF")
+        Conductors[id] = false;
+      else
+        throw HTTPException(HTTP_BAD_REQUEST);
+      cout << "Conductors put-> id: " << id << " state: " << state << endl;
+    }
+    else
+    {
+        HTTPException(HTTP_NOT_FOUND);
+    }
+}
+
+static void conductorsPut(shared_ptr<HTTPRequest> request)
+{
+    if (request->contentType() != MIME_APPICATION_JSON)
+        throw HTTPException(HTTP_BAD_REQUEST);
+    string payload;
+    while (!request->isRecvCompleted())
+    {
+        char buff[50];
+        int recvLen = request->Recv(buff, 50);
+        buff[recvLen] = 0;
+        payload += buff;
+    }
+    auto j = json::parse(payload.c_str());
+    if (j.is_array())
+    {
+      for (auto i = j.begin(); i != j.end(); i++)
+          conductorState(i->at("id").get<int>(), i->at("state").get<string>());
+      request->sendResponseHeader(HTTP_OK, MIME_TEXT_HTML);
+    }
+    else
+    {
+      conductorState(j.at("id").get<int>(), j.at("state").get<string>());
+      request->sendResponseHeader(HTTP_OK, MIME_TEXT_HTML);
+    };
+}
+
+static void MCBCallback(shared_ptr<HTTPRequest> request)
+{
+    athuentication(request);
+    if (request->method() == HTTP_METHOD_GET)
+    {
+        MCBsGet(request);
+    }
+}
+
+static void conductorsCallback(shared_ptr<HTTPRequest> request)
+{
+    athuentication(request);
+    if (request->method() == HTTP_METHOD_GET)
+    {
+        conductorsGet(request);
     }
     else if (request->method() == HTTP_METHOD_PUT)
     {
-        string payload;
-        char buff[50];
-        size_t recvedLen = 0;
-        while (!request->isRecvCompleted())
-        {
-            recvedLen = request->Recv(buff,49);
-            buff[recvedLen] = 0;
-            payload += buff;
-//            cout << "buff: \"" << buff << "\"" << strlen(buff) << "==" << recvedLen << endl;
-        }
-        //cout << "payload: \"" << payload     << "\"" << endl;
-        cout << "Payload length: " << payload.length() << endl;
+        conductorsPut(request);
     }
 }
 
-void loginCB2(shared_ptr<HTTPRequest> request)
+void fileCB(shared_ptr<HTTPRequest> request, string address, MIMEType type, string ContentEncoding = "")
 {
-    if (request->method() == HTTP_METHOD_GET)
+    char* data;
+    size_t size;
+    if (address == "server/index.html")
     {
-        request->sendResponseHeader(HTTP_OK, MIME_TEXT_HTML);
-        request->Send("ABCDEFG", strlen("ABCDEFG"));
+        extern const unsigned int indexHTMLSize;
+        size = indexHTMLSize;
+        extern const unsigned char*indexHTML;
+        data =  (char*)indexHTML;
     }
+    else if (address == "server/style.css")
+    {
+        extern const unsigned int styleCSSSize;
+        size = styleCSSSize;
+        extern const unsigned char styleCSS[];
+        data =  (char*)styleCSS;
+    }
+    else if (address == "server/script.js")
+    {
+        extern const unsigned int scriptJSSize;
+        size = scriptJSSize;
+        extern const unsigned char scriptJS[];
+        data =  (char*)scriptJS;
+    }
+    else if (address == "server/jquery.min.js.gz")
+    {
+        extern const unsigned int jqueryMinJSSize;
+        size = jqueryMinJSSize;
+        extern const unsigned char jqueryMinJS[];
+        data =  (char*)jqueryMinJS;
+    }
+    else if (address == "server/bootstrap.min.js.gz")
+    {
+        extern const unsigned int bootstrapMinJSSize;
+        size = bootstrapMinJSSize;
+        extern const unsigned char bootstrapMinJS[];
+        data =  (char*)bootstrapMinJS;
+    }
+    else if (address == "server/bootstrap.min.css.gz")
+    {
+        extern const unsigned int bootstrapMinCSSSize;
+        size = bootstrapMinCSSSize;
+        extern const unsigned char bootstrapMinCSS[];
+        data =  (char*)bootstrapMinCSS;
+    }
+    else
+        throw HTTPException(HTTP_FORBIDDEN);
+    request->sendResponseHeader(HTTP_OK, type);
+    request->Send(data, size);
 }
 
 int main(int argc, char** argv)
 {
-
+    using namespace std::placeholders;
     if (argc < 2)
         return EXIT_FAILURE;
     HTTPServer server(atoi(argv[1]));
+    auto indexCB = bind(fileCB, _1, "server/index.html", MIME_TEXT_HTML, "");
+    auto styleCSSCB = bind(fileCB, _1, "server/style.css", MIME_TEXT_CSS, "");
+    auto scriptJSCB = bind(fileCB, _1, "server/script.js", MIME_APPLICATION_JAVASCRIPT, "");
+    auto jqueryJSCB = bind(fileCB, _1, "server/jquery.min.js.gz", MIME_TEXT_JAVASCRIPT, "gzip");
+    auto bootstrapCSSCB = bind(fileCB, _1, "server/bootstrap.min.css.gz", MIME_TEXT_CSS, "gzip");
+    auto bootstrapJSSCB = bind(fileCB, _1, "server/bootstrap.min.js.gz", MIME_TEXT_CSS, "gzip");
     server.setRootCallback(indexCB);
-    auto i = server.addRootURI("login", loginCB);
-    server.addURI(i, "login", loginCB);
+    server.addRootURI("style.css", styleCSSCB);
+    server.addRootURI("script.js", scriptJSCB);
+    server.addRootURI("jquery.min.js", jqueryJSCB);
+    server.addRootURI("bootstrap.min.css", bootstrapCSSCB);
+    server.addRootURI("bootstrap.min.js", bootstrapJSSCB);
+
+    server.addRootURI("MCBs", MCBCallback);
+    server.addRootURI("Conductors", conductorsCallback);
     try
     {
         server.loop();

@@ -11,15 +11,16 @@ struct HTTPResponseCodePair
 const static struct HTTPResponseCodePair HTTPResponseCodeMap[] =
 {
     {HTTP_OK                                , "OK"                              },
-    {HTTP_NOT_MODIFIED                      , "NOT MODIFIED"                    },
-    {HTTP_BAD_REQUEST                       , "BAD REQUEST"                     },
-    {HTTP_FORBIDDEN                         , "HTTP FORBIDDEN"                  },
-    {HTTP_NOT_FOUND                         , "NOT FOUND"                       },
-    {HTTP_METHOD_NOT_ALLOWED                , "METHOD NOT ALLOWED"              },
+    {HTTP_NOT_MODIFIED                      , "Not Modified"                    },
+    {HTTP_BAD_REQUEST                       , "Bad Request"                     },
+    {HTTP_UNAUTHORIZED                      , "Unauthorized"                    },
+    {HTTP_FORBIDDEN                         , "Forbidden"                       },
+    {HTTP_NOT_FOUND                         , "Not found"                       },
+    {HTTP_METHOD_NOT_ALLOWED                , "Method Not Allowed"              },
     {HTTP_REQUEST_URI_TOO_LONG              , "REQUEST URI TOO LONG"            },
     {HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE   , "REQUEST HEADER FIELDS TOO LARGE" },
-    {HTTP_INTERNAL_SERVER_ERROR             , "INTERNAL SERVER ERROR"           },
-    {HTTP_NOT_IMPLEMENTED                   , "NOT IMPLEMENTED"                 },
+    {HTTP_INTERNAL_SERVER_ERROR             , "Internal Server Error"           },
+    {HTTP_NOT_IMPLEMENTED                   , "Not Implemented"                 },
 };
 
 string getHTTPResponseMessage(unsigned int code)

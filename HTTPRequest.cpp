@@ -24,6 +24,7 @@ const char MIMEString[][40] =
     "audio/vorbis",
     "multipart/form-data",
     "text/css",
+    "text/javascript",
     "text/html",
     "text/plain",
     "image/png",
@@ -97,8 +98,8 @@ void HTTPRequest::ParseHeader(const string& header)
         transform(name.begin(), name.end(), name.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
         name.erase(remove(name.begin(), name.end(), ' '), name.end());
         string value = line.substr(colonPosition + 1);
-        transform(value.begin(), value.end(), value.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
-        value.erase(remove(value.begin(), value.end(), ' '), value.end());
+        if (value.front() == ' ')
+            value.erase(value.begin());
         if (colonPosition == string::npos)
             throw HTTPException(HTTP_BAD_REQUEST);
         else if (name == "host")
@@ -113,9 +114,10 @@ void HTTPRequest::ParseHeader(const string& header)
             transferEncoding_ = parseTransferEncoding(value);
         else if (name == "content-length")
             contentLength_ = atoi(value.c_str());
-        else if (name == "authorization")
-            cout << "Auth: " << value << endl;
-
+//        else if (name == "authorization")
+//            cout << "Auth: " << value << endl;
+        else
+          headerParams_.emplace(name, value);
     }
     parseParams();
 }
@@ -180,16 +182,18 @@ HTTPMethod HTTPRequest::parseMethod(const string& method) const
     throw HTTPException(HTTP_NOT_IMPLEMENTED);
 }
 
-MIMEType HTTPRequest::parseContentType(const string& contentType) const
+MIMEType HTTPRequest::parseContentType(string contentType) const
 {
+    transform(contentType.begin(), contentType.end(), contentType.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
     for (int type = MIME_APPLICATION_JAVASCRIPT; type <= MIME_IMAGE_GIF; type++)
         if (contentType.find(MIMEString[type]) != string::npos)
             return (MIMEType)type;
     throw HTTPException(HTTP_BAD_REQUEST, "MIME type not found");
 }
 
-HTTPConnection HTTPRequest::parseConnection(const string& connection) const
+HTTPConnection HTTPRequest::parseConnection(string connection) const
 {
+    transform(connection.begin(), connection.end(), connection.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
     if (connection == CONNECTION_CLOSE)
         return HTTP_CONNECTION_CLOSE;
     if (connection == CONNECTION_KEEP_ALIVE)
@@ -199,8 +203,9 @@ HTTPConnection HTTPRequest::parseConnection(const string& connection) const
     throw HTTPException(HTTP_BAD_REQUEST, "Bad connection type");
 }
 
-HTTPTransferEncoding HTTPRequest::parseTransferEncoding(const string& transferEncoding) const
+HTTPTransferEncoding HTTPRequest::parseTransferEncoding(string transferEncoding) const
 {
+    transform(transferEncoding.begin(), transferEncoding.end(), transferEncoding.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
     if (transferEncoding == TRANSFER_ENCODING_CHUNKED)
         return HTTP_TRANSFER_ENCODING_CHUNKED;
     if (transferEncoding == TRANSFER_ENCODING_IDENTITY)
@@ -208,8 +213,9 @@ HTTPTransferEncoding HTTPRequest::parseTransferEncoding(const string& transferEn
     throw HTTPException(HTTP_BAD_REQUEST, "Bad Transfer-Encoding");
 }
 
-vector<MIMEType> HTTPRequest::parseAccept(const string& accept) const
+vector<MIMEType> HTTPRequest::parseAccept(string accept) const
 {
+    transform(accept.begin(), accept.end(), accept.begin(), [&](char ch) -> char {if (ch >= 'A' && ch <= 'Z') ch += 32; return ch;});
     vector<MIMEType> toBeReturned;
     for (int type = MIME_ALL; type <= MIME_IMAGE_GIF; type++)
         if (accept.find(MIMEString[type]) != string::npos)
@@ -436,8 +442,10 @@ void HTTPRequest::sendResponseHeader(unsigned int responseCode, MIMEType content
         return;
     stringstream response;
     response << "HTTP/1.1 " << responseCode << " " << getHTTPResponseMessage(responseCode) << "\r\n"
-             << "Content-Type: " << MIMEString[contentType] << "\r\n"
-             << "Connection: close\r\n"
+             << "Content-Type: " << MIMEString[contentType] << ";charset=UTF-8\r\n";
+    if (responseCode == HTTP_OK)
+      response << responseHeaderParams;
+    response << "Connection: close\r\n"
              << "Transfer-Encoding:chunked\r\n"
              << "\r\n";
     client_.Send(response.str().c_str(), response.str().length());
@@ -446,5 +454,16 @@ void HTTPRequest::sendResponseHeader(unsigned int responseCode, MIMEType content
 
 string HTTPRequest::params(const string& name)
 {
-    return params_[name];
+    return params_.at(name);
+}
+
+string HTTPRequest::headerParams(const string& name)
+{
+    return headerParams_.at(name);
+}
+
+void HTTPRequest::addResponseHeaderParameter(const string& name, const string& value)
+{
+    if (name != "" && value != "")
+        responseHeaderParams += name + ": " + value + "\r\n";
 }
