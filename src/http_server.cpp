@@ -1,14 +1,16 @@
 #include "http_server.h"
-#include "http_request.h"
 
-#include <algorithm>
-#include <stdexcept>
-#include <cstring>
-#include <cctype>
-#include <cstdlib>
+#include <regex>
 #include <string>
+#include <cctype>
+#include <cstring>
+#include <cstdlib>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
+#include <stdexcept>
+
+#include "http_request.h"
 
 using namespace std;
 
@@ -33,54 +35,41 @@ void HTTPServer::loop()
   }
 }
 
+void HTTPServer::addPattern(const std::string& pattern, PatternCallback callback)
+{
+  dispatchPatterns.emplace_back(std::make_pair(pattern, callback));
+}
+
 void HTTPServer::DispatchRequest(shared_ptr<HTTPRequest> request, TCPRemoteClient& client)
 {
   try
   {
     cout << "dispatching->URI: "<< request->URI() << endl;
-    string URI = request->URI();
-    string name = "";
-    size_t slashPos;
-    subURI* current = &root;
-    do
+    std::string url = request->URI();
+    for (auto& pattern: dispatchPatterns)
     {
-      slashPos = URI.find("/", 1);
-      size_t endNamePos;
-      if (slashPos != string::npos)
-        endNamePos = slashPos - 1;
-      else
-        endNamePos = string::npos;
-      name = URI.substr(1, endNamePos);
-      cout << "\tname: \"" << name << "\"" << endl;
-      cout << "\tremaining URI: \"" << URI << "\"" << endl;
-      auto next = find_if(current->children.begin(), current->children.end(), [&](shared_ptr<subURI> s){return s->name == name;});
-      if (next != current->children.end())
-        current = next->get();
-      else
-        break;
-      URI.erase(0, slashPos);
-    }while (slashPos != string::npos);
-    if (URI == "" || URI == "/")
-    {
-      if (current->callback != NULL)
-        current->callback(request);
+      std::string patternRegexString = std::regex_replace (pattern.first, std::regex("<int:[\\w]+>"), "\\d+");
+      patternRegexString = std::regex_replace (patternRegexString, std::regex("<string:[\\w]+>"), "[\\w\\.]+");
+      std::regex patternRegex(patternRegexString);
+      if (std::regex_match(url, patternRegex))
+      {
+        request->parseUrlPatterns(pattern.first);
+        pattern.second(request);
+        return;
+      }
     }
-    else
-    {
-      throw HTTPException(HTTP_NOT_FOUND);
-    }
-    if (!request->isHeaderSent())
-      HTTPServerErrorResponse(HTTP_NOT_IMPLEMENTED, client);
+    std::cerr << "Not found" << std::endl;
+    HTTPServerErrorResponse(HTTP_NOT_IMPLEMENTED, client);
   }
   catch (HTTPException& e)
   {
-    cout << "HTTP exception-> Code: " << e.HTTPErrorCode() << " ->>>> " << e.what() << endl;
+    cerr << "HTTP exception-> Code: " << e.HTTPErrorCode() << " ->>>> " << e.what() << endl;
     if (!request->isHeaderSent())
       HTTPServerErrorResponse(e.HTTPErrorCode(), client);
   }
   catch (exception &e)
   {
-    cout << "STD exception->>>>" << e.what() << endl;
+    cerr << "STD exception->>>>" << e.what() << endl;
     if (!request->isHeaderSent())
       HTTPServerErrorResponse(500, client);
   }
@@ -122,21 +111,4 @@ void HTTPServer::HTTPServerErrorResponse(unsigned int errorCode, TCPRemoteClient
              << "\r\n";
     client.Send(response.str().c_str(), response.str().length());
   }
-}
-
-shared_ptr<subURI> HTTPServer::addRootURI(const string& name, URICallback callback)
-{
-  root.children.emplace_back(make_shared<subURI>(name, callback));
-  return root.children.back();
-}
-
-shared_ptr<subURI> HTTPServer::addURI(shared_ptr<subURI> parent, const string& name, URICallback callback)
-{
-  parent->children.emplace_back(make_shared<subURI>(name, callback));
-  return parent->children.back();
-}
-
-void HTTPServer::setRootCallback(URICallback callback)
-{
-  root.callback = callback;
 }

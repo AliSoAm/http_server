@@ -1,16 +1,20 @@
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
+#include <map>
 #include <vector>
 #include <string>
 #include <cstdlib>
-#include <map>
+
+#include <nlohmann/json.hpp>
+#include "json.hpp"
 #include "http.h"
 #include "tcp_server.h"
 class HTTPRequest
 {
 public:
-                                        HTTPRequest                     (TCPRemoteClient client);
+                                      HTTPRequest                     (TCPRemoteClient client);
+  void                                parseUrlPatterns                (const std::string& pattern);
   HTTPMethod                          method                          ()                                                  const;
   std::string                         URI                             ()                                                  const;
   MIMEType                            contentType                     ()                                                  const;
@@ -27,10 +31,10 @@ public:
   bool                                isHeaderSent                    ()                                                  const;
   bool                                isRecvCompleted                 ()                                                  const;
   void                                Close                           ();
-  std::string                         params                          (const std::string& name);
+  nlohmann::json                      params                          (const std::string& name);
   std::string                         headerParams                    (const std::string& name);
   void                                addResponseHeaderParameter      (const std::string& name,
-                                                                         const std::string& value);
+                                                                       const std::string& value);
 private:
   TCPRemoteClient                     client_;
   HTTPMethod                          method_;
@@ -50,7 +54,7 @@ private:
   bool                                headerSent;
   std::string                         responseHeaderParams;
   std::map<std::string, std::string>  headerParams_;
-  std::map<std::string, std::string>  params_;
+  nlohmann::json                      params_;
   void                                ParseRequest                        ();
   void                                ParseHeader                         (const std::string& header);
   HTTPMethod                          parseMethod                         (const std::string& method)                     const;

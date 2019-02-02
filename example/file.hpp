@@ -2,7 +2,8 @@
 
 #include <memory>
 #include <string>
+#include <cstring>
 
 #include "http_server.h"
 
-void fileCB(std::shared_ptr<HTTPRequest> request, const std::string& address, MIMEType type, const std::string& contentEncoding = "");
+void fileCallback(std::shared_ptr<HTTPRequest> request);

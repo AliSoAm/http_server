@@ -1,7 +1,7 @@
+#include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include <string>
 
 #include "json.hpp"
 #include "http_server.h"
@@ -148,27 +148,20 @@ static void conductorsCallback(shared_ptr<HTTPRequest> request)
   }
 }
 
+void testCallback(std::shared_ptr<HTTPRequest> request)
+{
+  cout << request->params("file_name")<<" " << request->params("file2_name") << " " << request->params("id1") << " " << request->params("id2") << "\n" ;
+}
 int main(int argc, char** argv)
 {
   using namespace std::placeholders;
   if (argc < 2)
     return EXIT_FAILURE;
   HTTPServer server(atoi(argv[1]));
-  auto indexCB = bind(fileCB, _1, "server/index.html", MIME_TEXT_HTML, "");
-  auto styleCSSCB = bind(fileCB, _1, "server/style.css", MIME_TEXT_CSS, "");
-  auto scriptJSCB = bind(fileCB, _1, "server/script.js", MIME_APPLICATION_JAVASCRIPT, "");
-  auto jqueryJSCB = bind(fileCB, _1, "server/jquery.min.js.gz", MIME_TEXT_JAVASCRIPT, "gzip");
-  auto bootstrapCSSCB = bind(fileCB, _1, "server/bootstrap.min.css.gz", MIME_TEXT_CSS, "gzip");
-  auto bootstrapJSSCB = bind(fileCB, _1, "server/bootstrap.min.js.gz", MIME_TEXT_CSS, "gzip");
-  server.setRootCallback(indexCB);
-  server.addRootURI("style.css", styleCSSCB);
-  server.addRootURI("script.js", scriptJSCB);
-  server.addRootURI("jquery.min.js", jqueryJSCB);
-  server.addRootURI("bootstrap.min.css", bootstrapCSSCB);
-  server.addRootURI("bootstrap.min.js", bootstrapJSSCB);
-
-  server.addRootURI("MCBs", MCBCallback);
-  server.addRootURI("Conductors", conductorsCallback);
+  server.addPattern("/files/<string:file_url>", fileCallback);
+  server.addPattern("/test/<string:file_name>/.*/<string:file2_name>/12/<int:id1>/14/a/<int:id2>/.*", testCallback);
+  server.addPattern("/MCBs", MCBCallback);
+  server.addPattern("/Conductors", conductorsCallback);
   try
   {
     server.loop();

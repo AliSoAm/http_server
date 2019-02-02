@@ -1,5 +1,6 @@
 #include "http_request.h"
 
+#include <regex>
 #include <cctype>
 #include <string>
 #include <cstring>
@@ -40,6 +41,35 @@ HTTPRequest::HTTPRequest(TCPRemoteClient client): client_(client), contentLength
     throw HTTPException(HTTP_BAD_REQUEST, "TE with CL is not allowed");
   if (transferEncoding_ == HTTP_TRANSFER_ENCODING_NOT_SPECIFIED && contentLength_ == 0)
     recvComplete = true;
+}
+
+void HTTPRequest::parseUrlPatterns(const std::string& pattern)
+{
+  std::regex paramsRegex("<(int|string):(\\w+)>");
+  std::vector<std::pair<std::string, std::string>> parameters;
+  std::sregex_iterator params(pattern.begin(), pattern.end(), paramsRegex);
+  for (std::sregex_iterator it = params; it != std::sregex_iterator(); ++it)
+  {
+    std::smatch param = *it;
+    if (param.size() != 3)
+      throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
+    parameters.emplace_back(std::make_pair(param[1].str(), param[2].str()));
+  }
+  std::string patternRegexString = std::regex_replace (pattern, std::regex("<int:(\\w+)>"), "(\\d+)"); // FIXME ESCAPE CHAR
+  patternRegexString = std::regex_replace (patternRegexString, std::regex("<string:(\\w+)>"), "([\\w\\.]+)");
+  std::regex patternRegex(patternRegexString);
+  std::smatch piecesMatch;
+  if (!std::regex_match(URI_, piecesMatch, patternRegex))
+    throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
+  for (size_t i = 1; i < piecesMatch.size(); i++){
+    if (parameters[i-1].first == "int")
+      params_[parameters[i-1].second] = std::stoi(piecesMatch[i].str());
+    else if  (parameters[i-1].first == "string")
+      params_[parameters[i-1].second] = piecesMatch[i].str();
+    else
+      throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
+    cerr << parameters[i-1].first << ":" << parameters[i-1].second << ":" << piecesMatch[i].str() << endl;
+  }
 }
 
 void HTTPRequest::Close()
@@ -452,7 +482,7 @@ void HTTPRequest::sendResponseHeader(unsigned int responseCode, MIMEType content
   headerSent = true;
 }
 
-string HTTPRequest::params(const string& name)
+nlohmann::json HTTPRequest::params(const string& name)
 {
   return params_.at(name);
 }
