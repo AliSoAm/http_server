@@ -7,9 +7,10 @@
 #include <cstdlib>
 
 #include <nlohmann/json.hpp>
-#include "json.hpp"
-#include "http.h"
-#include "tcp_server.h"
+
+#include "http.hpp"
+#include "tcp_server.hpp"
+
 class HTTPRequest
 {
 public:

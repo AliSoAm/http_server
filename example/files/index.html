@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+  <title>IPDU</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="/files/bootstrap.min.css">
+  <link rel="stylesheet" href="/files/style.css">
+
+  <script src="/files/jquery.min.js"></script>
+  <script src="/files/bootstrap.min.js"></script>
+  <script src="/files/script.js"></script>
+</head>
+<body>
+  <div class="modal fade" id="loginModal" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title">ورود</h4>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <input type="text" class="form-control" placeholder="نام کاربری" id="usr">
+          </div>
+          <div class="form-group">
+            <input type="password" class="form-control" placeholder="کلمه عبور" id="pwd">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success pull-right" onclick="saveCred()">ورود</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="main container">
+    <h2>آی پی دی یو</h2>
+    <div class="tabs">
+      <div>
+        <ul class="nav nav-tabs nav-rtl">
+          <li class="active pull-right"><a data-toggle="tab" href="#menu1">وضعیت سنسورها</a></li>
+          <li class="pull-right"><a data-toggle="tab" href="#menu2">مدیریت</a></li>
+          <li class="pull-right"><a data-toggle="tab" href="#menu3">رخداد‌ها</a></li>
+        </ul>
+      </div>
+      <div class="tab-content">
+        <br>
+        <div id="menu1" class="tab-pane fade in active">
+          <div class="row">
+            <div class="col-md-5 pull-right">
+              <div class="row">
+                <div class="col-sm-12 pull-right">
+                  <div class="panel panel-default">
+                    <div class="panel-heading">پارامتر‌های عمومی</div>
+                    <div class="panel-body">
+                      <ul>
+                        <li class="switch">
+                          شروع خودکار ژنراتور:
+                          <div class="material-switch pull-left">
+                            <input id="generatorAutoStart" type="checkbox" />
+                            <label for="generatorAutoStart" class="label-warning"></label>
+                          </div>
+                        </li>
+                        <li>
+                          ولتاژ ژنراتور: <span id="generatorVoltage">0V</span>
+                        </li>
+                        <li>
+                          وضعیت ژنراتور:
+                            <div class="material-led pull-left">
+                            <label id="generatorSatatus" class="label-danger"></label>
+                          </div>
+                        </li>
+                        <li>
+                          ولتاژ ارت: <span id="earthVoltage">0V</span>
+                        </li>
+                        <li>
+                          وجود ارت:
+                            <div class="material-led pull-left">
+                            <label id="earthExist" class="label-danger"></label>
+                          </div>
+                        </li>
+                      </ul>
+                      <form action="" onsubmit="thunderEffect()">
+                        حساسیت ولتاژ ارت:
+                        <div class="input-group pull-left">
+                          <span class="input-group-btn pull-left">
+                            <button class="button btn btn-success btn-sm pull-left" type="button">ثبت</button>
+                          </span>
+                          <input type="number" min="0" step="1" max="50" id="earthRefrenceVoltage" class="input-sm pull-left">
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 pull-right">
+                  <div class="panel panel-default">
+                    <div class="panel-heading">ورودی برق
+                    </div>
+                    <div class="panel-body">
+                      <ul>
+                        <li>جریان: ۱۲A</li>
+                        <li>ولتاژ: ۲۰۰V</li>
+                        <li>فرکانس: ۳۰۰Hz</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 pull-right">
+                  <div class="panel panel-default">
+                    <div class="panel-heading"> ورودی UPS
+                    </div>
+                    <div class="panel-body">
+                      <ul>
+                        <li>جریان: ۱۲A</li>
+                        <li>ولتاژ: ۲۰۰V</li>
+                        <li>فرکانس: ۳۰۰Hz</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-7 pull-right">
+              <div class="panel panel-default">
+                <div class="panel-heading">سایر</div>
+                <div class="panel-body">
+                  <table class="table table-striped table-hover table-condensed">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>نام قسمت</th>
+                        <th>جریان</th>
+                        <th>وضعیت MCB</th>
+                        <th>وضعیت خط</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>F1:</strong></td>
+                        <td>Input Line(16A)</td>
+                        <td id="mcbCurrent1">0A</td>
+                        <td>
+                          <div class="material-led pull-right">
+                            <label id="mcb1" class="label-danger"></label>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="material-switch pull-right">
+                            <input id="conductor1" type="checkbox" onchange="conductorToggle(1)"/>
+                            <label for="conductor1" class="label-danger"></label>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><strong>F2:</strong></td>
+                        <td>Generator(16A)</td>
+                        <td id="mcbCurrent2">0A</td>
+                        <td>
+                          <div class="material-led pull-right">
+                            <label id="mcb2" class="label-danger"></label>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="material-switch pull-right">
+                            <input id="conductor2" type="checkbox" onchange="conductorToggle(2)"/>
+                            <label for="conductor2" class="label-danger"></label>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><strong>F3:</strong></td>
+                        <td>UPS(16A)</td>
+                        <td id="mcbCurrent3">0A</td>
+                        <td>
+                          <div class="material-led pull-right">
+                            <label id="mcb3" class="label-danger"></label>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="material-switch pull-right">
+                            <input id="conductor3" type="checkbox" onchange="conductorToggle(3)"/>
+                            <label for="conductor3" class="label-danger"></label>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><strong>F4:</strong></td>
+                        <td>AC Device1(16A)</td>
+                        <td id="mcbCurrent4">0A</td>
+                        <td>
+                          <div class="material-led pull-right">
+                            <label id="mcb4" class="label-danger"></label>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="material-switch pull-right">
+                            <input id="conductor4" type="checkbox" onchange="conductorToggle(4)"/>
+                            <label for="conductor4" class="label-danger"></label>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><strong>F5:</strong></td>
+                        <td>AC Device1(10A)</td>
+                        <td id="mcbCurrent5">0A</td>
+                        <td>
+                          <div class="material-led pull-right">
+                            <label id="mcb5" class="label-danger"></label>
+                          </div></td>
+                        <td>
+                          <div class="material-switch pull-right">
+                            <input id="conductor5" type="checkbox" onchange="conductorToggle(5)"/>
+                            <label for="conductor5" class="label-danger"></label>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><strong>F6:</strong></td>
+                        <td>DC Device(16A)</td>
+                        <td id="mcbCurrent6">0A</td>
+                        <td>
+                          <div class="material-led pull-right">
+                            <label id="mcb6" class="label-danger"></label>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="material-switch pull-right">
+                            <input id="conductor6" type="checkbox" onchange="conductorToggle(6)"/>
+                            <label for="conductor6" class="label-danger"></label>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><strong>F7:</strong></td>
+                        <td>General(16A)</td>
+                        <td id="mcbCurrent7">0A</td>
+                        <td>
+                          <div class="material-led pull-right">
+                            <label id="mcb7" class="label-danger"></label>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="material-switch pull-right">
+                            <input id="conductor7" type="checkbox" onchange="conductorToggle(7)"/>
+                            <label for="conductor7" class="label-info"></label>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><strong>F8:</strong></td>
+                        <td>Lighting(16A)</td>
+                        <td id="mcbCurrent8">0A</td>
+                        <td>
+                          <div class="material-led pull-right">
+                            <label id="mcb8" class="label-danger"></label>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="material-switch">
+                            <input id="conductor8" type="checkbox" onchange="conductorToggle(8)"/>
+                            <label for="conductor8" class="label-success"></label>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="menu2" class="tab-pane fade">
+          Not implemented
+        </div>
+        <div id="menu3" class="tab-pane fade">
+          <div class="panel panel-info">
+            <div class="panel-heading">رخداد‌ها</div>
+            <div class="panel-body">
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div class="alarms">
+      <div class="panel panel-danger">
+        <div class="panel-heading">اخطار‌ها</div>
+        <div class="panel-body">
+          <div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

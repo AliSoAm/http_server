@@ -1,8 +1,9 @@
 #ifndef HTTP_H
 #define HTTP_H
-#include <exception>
-#include <cstring>
+
 #include <string>
+#include <cstring>
+#include <exception>
 
 enum HTTPMethod
 {

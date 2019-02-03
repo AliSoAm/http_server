@@ -1,4 +1,4 @@
-#include "http_request.h"
+#include "http_request.hpp"
 
 #include <regex>
 #include <cctype>
@@ -68,7 +68,6 @@ void HTTPRequest::parseUrlPatterns(const std::string& pattern)
       params_[parameters[i-1].second] = piecesMatch[i].str();
     else
       throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
-    cerr << parameters[i-1].first << ":" << parameters[i-1].second << ":" << piecesMatch[i].str() << endl;
   }
 }
 
