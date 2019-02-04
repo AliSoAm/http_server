@@ -3,11 +3,10 @@
 #include <sstream>
 #include <iostream>
 
-#include "json.hpp"
-#include "http_server.h"
-#include "base64.h"
-
-#include "file.hpp"
+#include <nlohmann/json.hpp>
+#include <http_server/http_server.hpp>
+#include <http_server/utils/base64.hpp>
+#include <controllers/file_controller.hpp>
 
 using namespace std;
 using json = nlohmann::json;
@@ -152,16 +151,20 @@ void testCallback(std::shared_ptr<HTTPRequest> request)
 {
   cout << request->params("file_name")<<" " << request->params("file2_name") << " " << request->params("id1") << " " << request->params("id2") << "\n" ;
 }
+
 int main(int argc, char** argv)
 {
-  using namespace std::placeholders;
-  if (argc < 2)
+  if (argc < 3)
+  {
+    cerr << "Ussage: http_server_example [PORT_NUMBER] [ROOT_DIR]" << endl;
     return EXIT_FAILURE;
-  HTTPServer server(atoi(argv[1]));
-  server.addPattern("/files/<string:file_url>", fileCallback);
-  server.addPattern("/test/<string:file_name>/.*/<string:file2_name>/12/<int:id1>/14/a/<int:id2>/.*", testCallback);
-  server.addPattern("/MCBs", MCBCallback);
-  server.addPattern("/Conductors", conductorsCallback);
+  }
+  HTTPServer server(stoi(argv[1]));
+  Controller::FileController fileController(argv[2]);
+  server.addController<Controller::FileController>("/files/<string:file_path>", fileController);
+  server.addRoute("/test/<string:file_name>/.*/<string:file2_name>/12/<int:id1>/14/a/<int:id2>/.*", testCallback);
+  server.addRoute("/MCBs", MCBCallback);
+  server.addRoute("/Conductors", conductorsCallback);
   try
   {
     server.loop();

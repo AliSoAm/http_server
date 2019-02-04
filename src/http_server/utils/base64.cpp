@@ -1,5 +1,7 @@
-#include "base64.h"
+#include "base64.hpp"
+
 #include <stdexcept>
+
 using namespace std;
 vector<uint8_t> base64Decode(const string& base64Encoded)
 {

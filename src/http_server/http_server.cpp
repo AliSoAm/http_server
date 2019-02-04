@@ -1,4 +1,4 @@
-#include "http_server.h"
+#include "http_server.hpp"
 
 #include <regex>
 #include <string>
@@ -9,8 +9,6 @@
 #include <iostream>
 #include <algorithm>
 #include <stdexcept>
-
-#include "http_request.h"
 
 using namespace std;
 
@@ -35,7 +33,7 @@ void HTTPServer::loop()
   }
 }
 
-void HTTPServer::addPattern(const std::string& pattern, PatternCallback callback)
+void HTTPServer::addRoute(const std::string& pattern, const PatternCallback& callback)
 {
   dispatchPatterns.emplace_back(std::make_pair(pattern, callback));
 }
