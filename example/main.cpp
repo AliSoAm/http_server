@@ -8,8 +8,6 @@
 #include <http_server/utils/base64.hpp>
 #include <controllers/file_controller.hpp>
 
-#include "file.hpp"
-
 using namespace std;
 using json = nlohmann::json;
 
@@ -153,17 +151,17 @@ void testCallback(std::shared_ptr<HTTPRequest> request)
 {
   cout << request->params("file_name")<<" " << request->params("file2_name") << " " << request->params("id1") << " " << request->params("id2") << "\n" ;
 }
+
 int main(int argc, char** argv)
 {
-  using namespace std::placeholders;
   if (argc < 3)
   {
     cerr << "Ussage: http_server_example [PORT_NUMBER] [ROOT_DIR]" << endl;
     return EXIT_FAILURE;
   }
   HTTPServer server(stoi(argv[1]));
-  Controller::FileController::setRoot(argv[2]);
-  server.addRoute("/files/<string:file_path>", Controller::FileController::callback);
+  Controller::FileController fileController(argv[2]);
+  server.addController<Controller::FileController>("/files/<string:file_path>", fileController);
   server.addRoute("/test/<string:file_name>/.*/<string:file2_name>/12/<int:id1>/14/a/<int:id2>/.*", testCallback);
   server.addRoute("/MCBs", MCBCallback);
   server.addRoute("/Conductors", conductorsCallback);

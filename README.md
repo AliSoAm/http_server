@@ -11,4 +11,5 @@ Todo:
 - [ ] ADD HTTPServer namespace
 - [ ] Sort route for longest match first
 - [ ] ADD HTML engine: [link](https://pantor.github.io/inja/)
-- [ ] add resource
+- [ ] Add View Controller
+- [ ] Add Resource Controller

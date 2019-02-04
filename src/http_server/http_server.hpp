@@ -18,17 +18,19 @@ public:
                           HTTPServer                          (std::uint16_t port);
   void                    loop                                ();
   void                    addRoute                            (const std::string& pattern,
-                                                               PatternCallback callback);
+                                                               const PatternCallback& callback);
   template <class T>
-  void                    addResource                         (const std::string& pattern);
+  void                    addController                      (const std::string& pattern
+                                                              , T& object);
 private:
   TCPServer               tcpServer;
   void                    HandleClient                        (TCPRemoteClient& client);
-  void                    DispatchRequest                     (std::shared_ptr<HTTPRequest> request,
-                                                               TCPRemoteClient& client);
-  void                    HTTPServerErrorResponse             (unsigned int errorCode,
-                                                               TCPRemoteClient& client);
+  void                    DispatchRequest                     (std::shared_ptr<HTTPRequest> request
+                                                              , TCPRemoteClient& client);
+  void                    HTTPServerErrorResponse             (unsigned int errorCode
+                                                              , TCPRemoteClient& client);
   std::vector<std::pair<std::string, PatternCallback>> dispatchPatterns;
 };
 
+#include "http_server.tpp"
 #endif

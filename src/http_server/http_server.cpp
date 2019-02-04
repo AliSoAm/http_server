@@ -33,7 +33,7 @@ void HTTPServer::loop()
   }
 }
 
-void HTTPServer::addRoute(const std::string& pattern, PatternCallback callback)
+void HTTPServer::addRoute(const std::string& pattern, const PatternCallback& callback)
 {
   dispatchPatterns.emplace_back(std::make_pair(pattern, callback));
 }

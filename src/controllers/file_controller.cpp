@@ -9,11 +9,8 @@
 # define FILE_CONTROLLER_BUFFER_SIZE   1024
 #endif
 
-std::string Controller::FileController::root_;
-
-void Controller::FileController::setRoot(const std::string& root)
+Controller::FileController::FileController(const std::string& root): root_(root)
 {
-  root_ = root;
 }
 
 void Controller::FileController::callback(std::shared_ptr<HTTPRequest> request)

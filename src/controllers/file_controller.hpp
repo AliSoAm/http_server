@@ -11,13 +11,12 @@ namespace Controller
   class FileController
   {
   public:
-    FileController() = delete;
-    static void setRoot(const std::string& root);
-    static void callback(std::shared_ptr<HTTPRequest>);
+    FileController(const std::string& root);
+    void callback(std::shared_ptr<HTTPRequest>);
   private:
-    static bool fileExist(const std::string& path);
-    static MIMEType getMimeType(const std::string& path);
-    static std::string root_;
+    bool fileExist(const std::string& path);
+    MIMEType getMimeType(const std::string& path);
+    std::string root_;
   };
 }
 
