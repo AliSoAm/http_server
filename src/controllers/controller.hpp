@@ -1,5 +1,5 @@
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#ifndef CONTROLLERS_CONTROLLER_H
+#define CONTROLLERS_CONTROLLER_H
 
 #include <memory>
 

@@ -1,5 +1,5 @@
-#ifndef File_CONTROLLER_H
-#define File_CONTROLLER_H
+#ifndef CONTROLLERS_File_CONTROLLER_H
+#define CONTROLLERS_File_CONTROLLER_H
 
 #include <string>
 #include <fstream>

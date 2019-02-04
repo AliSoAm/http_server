@@ -161,7 +161,9 @@ int main(int argc, char** argv)
   }
   HTTPServer server(stoi(argv[1]));
   Controller::FileController fileController(argv[2]);
-  server.addController<Controller::FileController>("/files/<string:file_path>", fileController);
+  //server.addController<Controller::FileController>("/files/<string:file_path>", fileController);
+  //server.addController("/files/<string:file_path>", callback, fileController);
+  server.addController("/files/<string:file_path>", &Controller::FileController::callback, &fileController);
   server.addRoute("/test/<string:file_name>/.*/<string:file2_name>/12/<int:id1>/14/a/<int:id2>/.*", testCallback);
   server.addRoute("/MCBs", MCBCallback);
   server.addRoute("/Conductors", conductorsCallback);

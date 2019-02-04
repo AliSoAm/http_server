@@ -19,9 +19,10 @@ public:
   void                    loop                                ();
   void                    addRoute                            (const std::string& pattern,
                                                                const PatternCallback& callback);
-  template <class T>
-  void                    addController                      (const std::string& pattern
-                                                              , T& object);
+  template <typename T>
+  void                    addController                       (const std::string& pattern
+                                                              , void (T::*callback)(std::shared_ptr<HTTPRequest>)
+                                                              , T* object);
 private:
   TCPServer               tcpServer;
   void                    HandleClient                        (TCPRemoteClient& client);

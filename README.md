@@ -5,7 +5,7 @@ To build the example:
 cd example/build
 cmake ..
 make
-./http_server_example PORT_NUMBER
+./http_server_example 8123 ../files
 ```
 Todo:
 - [ ] ADD HTTPServer namespace

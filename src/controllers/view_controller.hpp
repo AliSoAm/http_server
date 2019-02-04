@@ -1,12 +1,25 @@
-#ifndef VIEW_CONTROLLER_H
-#define VIEW_CONTROLLER_H
+#ifndef CONTROLLERS_VIEW_CONTROLLER_H
+#define CONTROLLERS_VIEW_CONTROLLER_H
 
-#include "base_controller.hpp"
+#include <string>
 
-class ViewController: public BaseController
+#include <nlohmann/json.hpp>
+
+#include "controller.hpp"
+
+namespace Controller
 {
-public:
-private:
-};
+  class ViewController
+  {
+  public:
+    static init(const std::string& root, const std::string& layout);
+    ViewController(const std::string& view);
+  private:
+    void render(const nlohmann::json& arguments);
+    static std::string root_;
+    static std::string layout_;
+    std::string view_;
+  };
+}
 
 #endif
