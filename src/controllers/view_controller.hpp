@@ -12,10 +12,10 @@ namespace Controller
   class ViewController
   {
   public:
-    static init(const std::string& root, const std::string& layout);
+    static void init(const std::string& root, const std::string& layout);
     ViewController(const std::string& view);
   private:
-    void render(const nlohmann::json& arguments);
+    void render(const std::string& templateFile, const nlohmann::json& arguments);
     static std::string root_;
     static std::string layout_;
     std::string view_;

@@ -10,7 +10,8 @@ add_library(http_server STATIC
             ../src/http_server/tcp_server.cpp
             ../src/http_server/utils/base64.cpp
             ../src/controllers/controller.cpp
-            ../src/controllers/file_controller.cpp)
+            ../src/controllers/file_controller.cpp
+            ../src/controllers/view_controller.cpp)
 target_link_libraries (http_server  ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(http_server PUBLIC ../src/http_server ../modules/json/include)
 
