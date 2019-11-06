@@ -13,9 +13,9 @@ add_library(http_server STATIC
             ../src/controllers/file_controller.cpp
             ../src/controllers/view_controller.cpp)
 target_link_libraries (http_server  ${CMAKE_THREAD_LIBS_INIT})
-target_include_directories(http_server PUBLIC ../src/http_server ../modules/json/include)
+target_include_directories(http_server PUBLIC ../src/http_server ../modules/json/include ../modules/inja/single_include)
 
 add_executable (http_server_example
                 main.cpp)
 target_link_libraries (http_server_example  ${CMAKE_THREAD_LIBS_INIT} http_server)
-target_include_directories(http_server_example PUBLIC ../src ../modules/json/include)
+target_include_directories(http_server_example PUBLIC ../src ../modules/json/include ../modules/inja/single_include)

@@ -7,6 +7,7 @@
 #include <http_server/http_server.hpp>
 #include <http_server/utils/base64.hpp>
 #include <controllers/file_controller.hpp>
+#include <controllers/view_controller.hpp>
 
 using namespace std;
 using json = nlohmann::json;
@@ -152,6 +153,18 @@ void testCallback(std::shared_ptr<HTTPRequest> request)
   cout << request->params("file_name")<<" " << request->params("file2_name") << " " << request->params("id1") << " " << request->params("id2") << "\n" ;
 }
 
+class StaticController: public Controller::ViewController
+{
+public:
+  StaticController(const std::string& view): ViewController(view)
+  {
+  }
+  void home(std::shared_ptr<HTTPRequest> request)
+  {
+    render(request, "home.html.inja");
+  }
+};
+
 int main(int argc, char** argv)
 {
   if (argc < 3)
@@ -160,10 +173,12 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
   HTTPServer server(stoi(argv[1]));
-  Controller::FileController fileController(argv[2]);
-  //server.addController<Controller::FileController>("/files/<string:file_path>", fileController);
-  //server.addController("/files/<string:file_path>", callback, fileController);
-  server.addController("/files/<string:file_path>", &Controller::FileController::callback, &fileController);
+  std::string root(argv[2]);
+  Controller::ViewController::init(root + "/view/", "layout.html.inja");
+  Controller::FileController fileController(root + "/files/");
+  StaticController staticPages("static");
+  server.addController("/", &StaticController::home, &staticPages);
+  server.addController("/<url:file_path>", &Controller::FileController::callback, &fileController);
   server.addRoute("/test/<string:file_name>/.*/<string:file2_name>/12/<int:id1>/14/a/<int:id2>/.*", testCallback);
   server.addRoute("/MCBs", MCBCallback);
   server.addRoute("/Conductors", conductorsCallback);

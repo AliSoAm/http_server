@@ -10,6 +10,7 @@ make
 Todo:
 - [ ] ADD HTTPServer namespace
 - [ ] Sort route for longest match first
-- [ ] ADD HTML engine: [link](https://pantor.github.io/inja/)
-- [ ] Add View Controller
+- [x] ADD HTML engine: [link](https://pantor.github.io/inja/)
+- [x] Add View Controller
 - [ ] Add Resource Controller
+- [ ] Complete redirect function

@@ -48,6 +48,7 @@ void HTTPServer::DispatchRequest(shared_ptr<HTTPRequest> request, TCPRemoteClien
     {
       std::string patternRegexString = std::regex_replace (pattern.first, std::regex("<int:[\\w]+>"), "\\d+");
       patternRegexString = std::regex_replace (patternRegexString, std::regex("<string:[\\w]+>"), "[\\w\\.]+");
+      patternRegexString = std::regex_replace (patternRegexString, std::regex("<url:[\\w]+>"), "[\\w\\.\\/]+");
       std::regex patternRegex(patternRegexString);
       if (std::regex_match(url, patternRegex))
       {

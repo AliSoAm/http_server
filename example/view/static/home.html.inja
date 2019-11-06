@@ -1,0 +1,23 @@
+<div>
+  <div id='d2' style="position:relative; top:50%; left:50%; z-index:2;">
+    <canvas id="myCanvas" width="200" height="200"
+    style="border:1px solid #c3c3c3;">
+    Your browser does not support the canvas element.
+    </canvas>
+  </div>
+</div>
+<script>
+window.onload = function() {
+  var c = document.getElementById("myCanvas");
+  var ctx = c.getContext("2d");
+  var img = new Image;
+  $('#myCanvas').on('dblclick', function() {
+    alert("Hello");
+  });
+  img.onload = function() {
+    ctx.drawImage(img,0,0, img.width, img.height,0, 0, c.width, c.height);
+  };
+  img.src = "/assets/images/water_pump.png";
+}
+
+</script>

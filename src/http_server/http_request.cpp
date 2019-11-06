@@ -45,7 +45,7 @@ HTTPRequest::HTTPRequest(TCPRemoteClient client): client_(client), contentLength
 
 void HTTPRequest::parseUrlPatterns(const std::string& pattern)
 {
-  std::regex paramsRegex("<(int|string):(\\w+)>");
+  std::regex paramsRegex("<(int|string|url):(\\w+)>");
   std::vector<std::pair<std::string, std::string>> parameters;
   std::sregex_iterator params(pattern.begin(), pattern.end(), paramsRegex);
   for (std::sregex_iterator it = params; it != std::sregex_iterator(); ++it)
@@ -57,6 +57,7 @@ void HTTPRequest::parseUrlPatterns(const std::string& pattern)
   }
   std::string patternRegexString = std::regex_replace (pattern, std::regex("<int:(\\w+)>"), "(\\d+)"); // FIXME ESCAPE CHAR
   patternRegexString = std::regex_replace (patternRegexString, std::regex("<string:(\\w+)>"), "([\\w\\.]+)");
+  patternRegexString = std::regex_replace (patternRegexString, std::regex("<url:(\\w+)>"), "([\\w\\.\\/]+)");
   std::regex patternRegex(patternRegexString);
   std::smatch piecesMatch;
   if (!std::regex_match(URI_, piecesMatch, patternRegex))
@@ -64,7 +65,7 @@ void HTTPRequest::parseUrlPatterns(const std::string& pattern)
   for (size_t i = 1; i < piecesMatch.size(); i++){
     if (parameters[i-1].first == "int")
       params_[parameters[i-1].second] = std::stoi(piecesMatch[i].str());
-    else if  (parameters[i-1].first == "string")
+    else if  (parameters[i-1].first == "string" || parameters[i-1].first == "url")
       params_[parameters[i-1].second] = piecesMatch[i].str();
     else
       throw HTTPException(HTTP_INTERNAL_SERVER_ERROR);
